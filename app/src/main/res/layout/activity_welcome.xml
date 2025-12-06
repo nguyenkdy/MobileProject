@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- BACKGROUND IMAGE -->
+    <ImageView
+        android:id="@+id/imgBg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/bg_welcome"
+        android:scaleType="centerCrop" />
+
+    <!-- DARK OVERLAY (để chữ nổi hơn) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000" />
+
+    <!-- CONTENT LAYOUT -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="24dp"
+        android:layout_centerInParent="true">
+
+        <!-- LOGO NOTES -->
+        <ImageView
+            android:id="@+id/imgLogo"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/notes_logo"
+            android:layout_marginBottom="20dp" />
+
+        <!-- APP NAME -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MyNotes App"
+            android:textColor="#FFFFFF"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <!-- TAGLINE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Write • Organize • Share"
+            android:textColor="#EEEEEE"
+            android:textSize="16sp"
+            android:layout_marginTop="6dp" />
+
+        <!-- SIGN IN BUTTON -->
+        <Button
+            android:id="@+id/btnSignIn"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Sign In"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:background="@drawable/btn_blue"
+            android:backgroundTint="@null"
+            android:layout_marginTop="40dp" />
+
+        <!-- SIGN UP BUTTON -->
+        <Button
+            android:id="@+id/btnSignUp"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Sign Up"
+            android:textColor="#1E88E5"
+            android:textSize="18sp"
+            android:background="@drawable/btn_white_border"
+            android:backgroundTint="@null"
+            android:layout_marginTop="16dp" />
+
+    </LinearLayout>
+
+</RelativeLayout>
