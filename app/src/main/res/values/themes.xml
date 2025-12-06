@@ -1,9 +1,28 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
     <style name="Base.Theme.MyNoesApplication" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <!-- MÀU CHÍNH (blue tone) -->
+        <item name="colorPrimary">@color/blue_primary</item>
+        <item name="colorPrimaryContainer">@color/blue_primary_container</item>
+
+        <!-- MÀU SECONDARY -->
+        <item name="colorSecondary">@color/blue_secondary</item>
+        <item name="colorSecondaryContainer">@color/blue_secondary_container</item>
+
+        <!-- TẮT HOÀN TOÀN NÚT MATERIAL TINT -->
+        <item name="materialButtonStyle">@style/MyButtonStyle</item>
+
     </style>
 
     <style name="Theme.MyNoesApplication" parent="Base.Theme.MyNoesApplication" />
+
+    <!-- STYLE BUTTON CUSTOM ĐỂ HỦY TINT -->
+    <style name="MyButtonStyle" parent="Widget.Material3.Button">
+        <item name="android:backgroundTint">@null</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
 </resources>

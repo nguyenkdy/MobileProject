@@ -29,13 +29,18 @@
         <!-- LOGO NOTES -->
         <ImageView
             android:id="@+id/imgLogo"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:src="@drawable/notes_logo"
-            android:layout_marginBottom="20dp" />
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:src="@drawable/img"
+            android:background="@drawable/rounded_mask"
+            android:scaleType="centerCrop"
+            android:clipToOutline="true"
+            android:layout_marginBottom="20dp"/>
+
 
         <!-- APP NAME -->
         <TextView
+            android:id="@+id/txtTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="MyNotes App"
@@ -46,6 +51,7 @@
 
         <!-- TAGLINE -->
         <TextView
+            android:id="@+id/txtTagline"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Write • Organize • Share"
@@ -62,7 +68,6 @@
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:background="@drawable/btn_blue"
-            android:backgroundTint="@null"
             android:layout_marginTop="40dp" />
 
         <!-- SIGN UP BUTTON -->
@@ -74,7 +79,6 @@
             android:textColor="#1E88E5"
             android:textSize="18sp"
             android:background="@drawable/btn_white_border"
-            android:backgroundTint="@null"
             android:layout_marginTop="16dp" />
 
     </LinearLayout>
