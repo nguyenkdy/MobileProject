@@ -86,13 +86,11 @@ public class NotesActivity extends AppCompatActivity {
 
         // SỬA
         optEdit.setOnClickListener(v -> {
-            // TODO: xử lý
             dialog.dismiss();
         });
 
         // GHIM
         optPin.setOnClickListener(v -> {
-            // TODO: xử lý
             dialog.dismiss();
         });
 
