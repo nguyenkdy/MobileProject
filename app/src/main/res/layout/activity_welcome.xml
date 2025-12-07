@@ -8,7 +8,7 @@
         android:id="@+id/imgBg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/bg_welcome"
+        android:src="@drawable/img_1"
         android:scaleType="centerCrop" />
 
     <!-- DARK OVERLAY (để chữ nổi hơn) -->
@@ -19,6 +19,7 @@
 
     <!-- CONTENT LAYOUT -->
     <LinearLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -26,7 +27,7 @@
         android:padding="24dp"
         android:layout_centerInParent="true">
 
-        <!-- LOGO NOTES -->
+    <!-- LOGO NOTES -->
         <ImageView
             android:id="@+id/imgLogo"
             android:layout_width="140dp"
@@ -62,7 +63,7 @@
         <!-- SIGN IN BUTTON -->
         <Button
             android:id="@+id/btnSignIn"
-            android:layout_width="match_parent"
+            android:layout_width="300dp"
             android:layout_height="55dp"
             android:text="Sign In"
             android:textColor="#FFFFFF"
@@ -73,7 +74,7 @@
         <!-- SIGN UP BUTTON -->
         <Button
             android:id="@+id/btnSignUp"
-            android:layout_width="match_parent"
+            android:layout_width="300dp"
             android:layout_height="55dp"
             android:text="Sign Up"
             android:textColor="#1E88E5"

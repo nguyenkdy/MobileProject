@@ -6,51 +6,52 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.LinearLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 public class WelcomeActivity extends AppCompatActivity {
 
     ImageView imgLogo;
-    TextView txtTitle, txtTagline;
+    LinearLayout container;
     Button btnSignIn, btnSignUp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_welcome); // liên kết đúng file XML bạn gửi
+        setContentView(R.layout.activity_welcome);
 
-        // Ánh xạ View
         imgLogo = findViewById(R.id.imgLogo);
-        txtTitle = findViewById(R.id.txtTitle);     // bạn có thể thêm id này trong XML
-        txtTagline = findViewById(R.id.txtTagline); // hoặc thay bằng findViewById trực tiếp
+        container = findViewById(R.id.container);
         btnSignIn = findViewById(R.id.btnSignIn);
         btnSignUp = findViewById(R.id.btnSignUp);
 
-        // Animation
         Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
         Animation slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+        Animation clickAnim = AnimationUtils.loadAnimation(this, R.anim.button_click);
 
-        // Áp animation
         imgLogo.startAnimation(fadeIn);
-        btnSignIn.startAnimation(slideUp);
-        btnSignUp.startAnimation(slideUp);
+        container.startAnimation(slideUp);
 
-        // Nếu bạn thêm id cho TextView thì animation sẽ đẹp hơn
-        if (txtTitle != null) txtTitle.startAnimation(slideUp);
-        if (txtTagline != null) txtTagline.startAnimation(slideUp);
-
-        // Chuyển sang màn đăng nhập
+        // CLICK SIGN IN
         btnSignIn.setOnClickListener(v -> {
-            Intent intent = new Intent(WelcomeActivity.this, SignInActivity.class);
-            startActivity(intent);
+            v.startAnimation(clickAnim);
+
+            // Delay nhỏ để animation click hiển thị rõ rồi mới chuyển trang
+            v.postDelayed(() -> {
+                startActivity(new Intent(WelcomeActivity.this, SignInActivity.class));
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            }, 180); // bằng duration của button_click
         });
 
-        // Chuyển sang màn đăng ký
+        // CLICK SIGN UP
         btnSignUp.setOnClickListener(v -> {
-            Intent intent = new Intent(WelcomeActivity.this, SignUpActivity.class);
-            startActivity(intent);
+            v.startAnimation(clickAnim);
+
+            v.postDelayed(() -> {
+                startActivity(new Intent(WelcomeActivity.this, SignUpActivity.class));
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            }, 180);
         });
     }
 }

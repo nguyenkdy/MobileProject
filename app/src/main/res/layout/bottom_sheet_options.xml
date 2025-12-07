@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white">
+
+    <!-- ITEM 1 -->
+    <LinearLayout
+        android:id="@+id/optAllNotes"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_allnotes"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tất cả ghi chú"
+            android:textSize="18sp"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <!-- ITEM 2 -->
+    <LinearLayout
+        android:id="@+id/optShared"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_shared"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ghi chú chia sẻ"
+            android:textSize="18sp"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <!-- ITEM 3 -->
+    <LinearLayout
+        android:id="@+id/optTrash"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_trash"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thùng rác"
+            android:textSize="18sp"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <!-- ITEM 4 -->
+    <LinearLayout
+        android:id="@+id/optFolders"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_folder" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thư mục"
+            android:textSize="18sp"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+</LinearLayout>
