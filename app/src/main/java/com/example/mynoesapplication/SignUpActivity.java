@@ -2,6 +2,7 @@ package com.example.mynoesapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Adapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -10,7 +11,11 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.mynoesapplication.Folder.Folder;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -18,6 +23,9 @@ public class SignUpActivity extends AppCompatActivity {
     Button btnSignUp;
     TextView txtGoToSignIn;
     FirebaseAuth auth;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

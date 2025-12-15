@@ -21,6 +21,7 @@ public class WelcomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
+
         imgLogo = findViewById(R.id.imgLogo);
         container = findViewById(R.id.container);
         btnSignIn = findViewById(R.id.btnSignIn);
