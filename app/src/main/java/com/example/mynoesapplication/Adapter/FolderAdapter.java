@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.mynoesapplication.Folder.Folder;
+import com.example.mynoesapplication.ClassData.Folder;
 
 import java.util.List;
 

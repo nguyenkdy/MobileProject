@@ -12,10 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyNoesApplication">
         <activity
-            android:name=".NoteEditingActivity"
-            android:exported="false" />
-        <activity
-            android:name=".NotesActivity"
+            android:name=".WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,8 +21,9 @@
             </intent-filter>
         </activity>
         <activity android:name=".SignInActivity" />
-        <activity android:name=".SignUpActivity" /> <!-- <activity android:name=".NotesActivity"/> -->
-        <activity android:name=".WelcomeActivity" />
+        <activity android:name=".SignUpActivity" />
+        <activity android:name=".NotesActivity"/>
+        <activity android:name=".NoteEditingActivity" />
         <activity android:name=".FolderEditingActivity" />
     </application>
 

@@ -1,29 +1,67 @@
+// language: java
 package com.example.mynoesapplication;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import com.example.mynoesapplication.ClassData.Note;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
+import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class NoteRepository {
-    private static final String PREFS_NAME = "NotesPrefs";
-    private static final String NOTES_KEY = "NotesKey";
-    private final SharedPreferences sharedPreferences;
+    private static final String TAG = "NoteRepository";
+    private final FirebaseFirestore db;
 
-    public NoteRepository(Context context) {
-        sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    public NoteRepository() {
+        db = FirebaseFirestore.getInstance();
     }
 
-    public void saveNotes(List<String> notes) {
-        Set<String> noteSet = new HashSet<>(notes);
-        sharedPreferences.edit().putStringSet(NOTES_KEY, noteSet).apply();
+    public void saveNote(Note note, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection("notes").document(note.getId())
+                .set(note)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
     }
 
-    public List<String> loadNotes() {
-        Set<String> noteSet = sharedPreferences.getStringSet(NOTES_KEY, new HashSet<>());
-        return new ArrayList<>(noteSet);
+    // convenience overload used by existing code
+    public void saveNote(Note note) {
+        saveNote(note,
+                aVoid -> Log.d(TAG, "Note saved: " + note.getId()),
+                e -> Log.e(TAG, "Failed to save note: " + note.getId(), e));
+    }
+
+    public void deleteNote(String noteId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection("notes").document(noteId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    public interface OnNotesLoaded {
+        void onLoaded(List<Note> notes);
+        void onError(Exception e);
+    }
+
+    public void getNotesForFolder(String folderId, OnNotesLoaded callback) {
+        db.collection("notes")
+                .whereEqualTo("folderId", folderId)
+                .get()
+                .addOnSuccessListener((QuerySnapshot qs) -> {
+                    List<Note> notes = new ArrayList<>();
+                    for (DocumentSnapshot ds : qs.getDocuments()) {
+                        Note note = ds.toObject(Note.class);
+                        if (note != null) notes.add(note);
+                    }
+                    callback.onLoaded(notes);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching notes for folder " + folderId, e);
+                    callback.onError(new Exception(e));
+                });
     }
 }

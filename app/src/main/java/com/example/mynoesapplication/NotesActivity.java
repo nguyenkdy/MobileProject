@@ -2,6 +2,7 @@ package com.example.mynoesapplication;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -16,8 +17,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.mynoesapplication.Folder.Folder;
+import com.example.mynoesapplication.FolderAdapter;
+import com.example.mynoesapplication.ClassData.Folder;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -26,7 +27,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
+import  com.example.mynoesapplication.FolderRepository;
 
 public class NotesActivity extends AppCompatActivity {
     RecyclerView recyclerView;
@@ -43,6 +44,8 @@ public class NotesActivity extends AppCompatActivity {
     private Animation fromBottom;
     private Animation toBottom;
     private FloatingActionButton bttn_org,bttn_fun1,bttn_fun2;
+    private FolderRepository folderRepository;
+
     private Boolean clicked = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,42 +66,27 @@ public class NotesActivity extends AppCompatActivity {
         btnSetting.setOnClickListener(v -> showSettingMenu());
 
 
-
         //BUTTONS FLOATING
         bttn_org = findViewById(R.id.floatingActionButton2);
         bttn_fun1 = findViewById(R.id.floatingActionButton3);
         bttn_fun2 = findViewById(R.id.floatingActionButton4);
         // ANIMATION FOR BUTTONS FLOATINGS
-        rotateOpen  = AnimationUtils.loadAnimation(this, R.anim.rotate_open_animation);
+        rotateOpen = AnimationUtils.loadAnimation(this, R.anim.rotate_open_animation);
         rotateClose = AnimationUtils.loadAnimation(this, R.anim.rotate_close_animation);
-        fromBottom  = AnimationUtils.loadAnimation(this, R.anim.from_bottom_animation);
-        toBottom    = AnimationUtils.loadAnimation(this, R.anim.to_bottom_animation);
+        fromBottom = AnimationUtils.loadAnimation(this, R.anim.from_bottom_animation);
+        toBottom = AnimationUtils.loadAnimation(this, R.anim.to_bottom_animation);
 
-
-        bttn_org.setOnClickListener(v->{
-        Button_click();
-
-        });
-        bttn_fun1.setOnClickListener(v->{
-            showSetNameFolder();
-        });
-        bttn_fun2.setOnClickListener(v->{
-
-        });
-
-
-        //ADAPDER
+        // RecyclerView setup
         recyclerView = findViewById(R.id.recyclerNotes);
-
         folderList = new ArrayList<>();
-
         folderAdapter = new FolderAdapter(folderList);
-
-
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(folderAdapter);
 
-        //1
+        // Initialize FolderRepository
+        folderRepository = new FolderRepository();
+
+        // Set folder click listener
         folderAdapter.setOnItemClickListener(folder -> {
             Intent intent = new Intent(NotesActivity.this, FolderEditingActivity.class);
             intent.putExtra("folderId", folder.getId());
@@ -106,10 +94,28 @@ public class NotesActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Load folders from Firestore
+        loadFolders();
+
+        bttn_org.setOnClickListener(v -> {
+            Button_click();
+
+        });
+        bttn_fun1.setOnClickListener(v -> {
+            showSetNameFolder();
+        });
+        bttn_fun2.setOnClickListener(v -> {
+
+        });
 
 
+        // Menu actions
+        btnOption.setOnClickListener(v -> showOptionMenu());
+        btnSetting.setOnClickListener(v -> showSettingMenu());
 
     }
+
+
     private void Button_click(){
         SetVisibiliity(clicked);
         SetAnimation(clicked);
@@ -221,6 +227,7 @@ public class NotesActivity extends AppCompatActivity {
 
         dialog.setContentView(view);
         dialog.show();
+        loadFolders();
 
     }
 
@@ -245,19 +252,47 @@ public class NotesActivity extends AppCompatActivity {
                 return;
             }
 
-            // Add folder to RecyclerView
-            folderList.add(new Folder(UUID.randomUUID().toString(), name));
+            // Create a new folder
+            Folder newFolder = new Folder(UUID.randomUUID().toString(), name);
+
+            // Save the folder to Firestore
+            folderRepository.saveFolder(newFolder);
+
+            // Add the folder to the local list and update the adapter
+            folderList.add(newFolder);
             folderAdapter.notifyItemInserted(folderList.size() - 1);
 
             dialog.dismiss();
         });
 
-
-
-
         // Show the dialog
         dialog.show();
     }
+
+    private void loadFolders() {
+    Log.d("NotesActivity", "Loading folders from Firestore");
+    folderRepository.getAllFolders(new FolderRepository.OnFoldersLoaded() {
+        @Override
+        public void onLoaded(List<Folder> folders) {
+            runOnUiThread(() -> {
+                folderList.clear();
+                folderList.addAll(folders);
+                folderAdapter.notifyDataSetChanged();
+                Log.d("NotesActivity", "Folders loaded: " + folders.size());
+            });
+        }
+
+        @Override
+        public void onError(Exception e) {
+            Log.e("NotesActivity", "Failed loading folders", e);
+            runOnUiThread(() -> {
+                // Notify user of the error
+               // Toast.makeText(NotesActivity.this, "Failed to load folders", Toast.LENGTH_SHORT).show();
+            });
+        }
+    });
+}
+
 
 
 

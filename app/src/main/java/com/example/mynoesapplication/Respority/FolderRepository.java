@@ -1,42 +1,60 @@
-// File: app/src/main/java/com/example/mynoesapplication/FolderRepository.java
+// language: java
 package com.example.mynoesapplication;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import com.example.mynoesapplication.ClassData.Folder;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.DocumentSnapshot;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
+import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class FolderRepository {
-    private static final String PREFS_NAME = "FoldersPrefs";
-    private static final String FOLDERS_KEY = "FoldersKey";
-    private final SharedPreferences sharedPreferences;
+    private static final String TAG = "FolderRepository";
+    private final FirebaseFirestore db;
 
-    public FolderRepository(Context context) {
-        sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    public FolderRepository() {
+        db = FirebaseFirestore.getInstance();
     }
 
-    public void saveFolders(Map<String, List<String>> folders) {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        for (Map.Entry<String, List<String>> entry : folders.entrySet()) {
-            Set<String> notesSet = new HashSet<>(entry.getValue());
-            editor.putStringSet(entry.getKey(), notesSet);
-        }
-        editor.putStringSet(FOLDERS_KEY, folders.keySet());
-        editor.apply();
+    public void saveFolder(Folder folder) {
+        db.collection("folders").document(folder.getId())
+                .set(folder)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Folder saved: " + folder.getId()))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to save folder: " + folder.getId(), e));
     }
 
-    public Map<String, List<String>> loadFolders() {
-        Map<String, List<String>> folders = new HashMap<>();
-        Set<String> folderNames = sharedPreferences.getStringSet(FOLDERS_KEY, new HashSet<>());
-        for (String folderName : folderNames) {
-            Set<String> notesSet = sharedPreferences.getStringSet(folderName, new HashSet<>());
-            folders.put(folderName, new ArrayList<>(notesSet));
-        }
-        return folders;
+    public void deleteFolder(String folderId) {
+        db.collection("folders").document(folderId)
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Folder deleted: " + folderId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to delete folder: " + folderId, e));
+    }
+
+    public interface OnFoldersLoaded {
+        void onLoaded(List<Folder> folders);
+        void onError(Exception e);
+    }
+
+    public void getAllFolders(OnFoldersLoaded callback) {
+        db.collection("folders")
+                .get()
+                .addOnSuccessListener((QuerySnapshot qs) -> {
+                    List<Folder> folders = new ArrayList<>();
+                    for (DocumentSnapshot ds : qs.getDocuments()) {
+                        Folder folder = ds.toObject(Folder.class);
+                        if (folder != null) folders.add(folder);
+                    }
+                    callback.onLoaded(folders);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching folders", e);
+                    callback.onError(new Exception(e));
+                });
     }
 }

@@ -1,10 +1,13 @@
-package com.example.mynoesapplication.Folder;
+package com.example.mynoesapplication.ClassData;
 
 public class Folder {
     String id;
     public String name;
     int noteCount;
 
+    public Folder() {
+        //Default
+    }
     public Folder(String id, String name) {
         this.id = id;
         this.name = name;
