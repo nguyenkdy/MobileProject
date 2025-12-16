@@ -1,4 +1,4 @@
-package com.example.mynoesapplication;
+package com.example.mynoesapplication.Adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mynoesapplication.ClassData.Folder;
+import com.example.mynoesapplication.R;
 
 import java.util.List;
 
