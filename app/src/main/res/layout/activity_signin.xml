@@ -28,7 +28,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sign In"
+            android:text="Đăng Nhập"
             android:id="@+id/txtTitle"
             android:textColor="#FFFFFF"
             android:textSize="30sp"
@@ -57,7 +57,7 @@
             android:id="@+id/checkRemember"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Remember me"
+            android:text="Nhớ đăng nhập"
             android:textColor="#FFFFFF"
             android:layout_marginTop="12dp"
             android:layout_gravity="start"/>
@@ -66,7 +66,7 @@
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
             android:layout_height="55dp"
-            android:text="Sign In"
+            android:text="Đăng Nhập"
             android:textColor="#FFFFFF"
             android:backgroundTint="#1E88E5"
             android:layout_marginTop="28dp"/>
@@ -75,7 +75,7 @@
             android:id="@+id/txtGoToSignUp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No account? Create one"
+            android:text="Chưa có tài khoản? Đăng ký"
             android:textSize="16sp"
             android:textColor="#FFFFFF"
             android:textStyle="normal"

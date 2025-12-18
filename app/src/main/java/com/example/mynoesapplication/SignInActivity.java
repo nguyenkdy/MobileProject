@@ -3,6 +3,7 @@ package com.example.mynoesapplication;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -13,14 +14,19 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class SignInActivity extends AppCompatActivity {
+
+    private static final String TAG = "LOGIN";
 
     EditText edtEmail, edtPassword;
     Button btnLogin;
     TextView txtGoToSignUp;
     CheckBox checkRemember;
+
     FirebaseAuth auth;
+    boolean isLoggingIn = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,24 +44,34 @@ public class SignInActivity extends AppCompatActivity {
 
         SharedPreferences pref = getSharedPreferences("MyNoteApp", MODE_PRIVATE);
 
-        // ===== TỰ ĐIỀN EMAIL + PASS =====
+        // ===== Fill saved data =====
         edtEmail.setText(pref.getString("saved_email", ""));
         edtPassword.setText(pref.getString("saved_pass", ""));
+        checkRemember.setChecked(pref.getBoolean("remember", false));
 
-        // ===== AUTO LOGIN nếu remember = true =====
-        if (pref.getBoolean("remember", false) && auth.getCurrentUser() != null) {
-            startActivity(new Intent(SignInActivity.this, NotesActivity.class));
+        // ===== SAFE AUTO LOGIN =====
+        FirebaseUser currentUser = auth.getCurrentUser();
+        boolean remember = pref.getBoolean("remember", false);
+
+        Log.d(TAG, "remember=" + remember + ", user=" + (currentUser != null));
+
+        if (remember && currentUser != null) {
+            Log.d(TAG, "AUTO LOGIN -> NotesActivity");
+            startActivity(new Intent(this, NotesActivity.class));
             finish();
+            return;
         }
 
-        // Chuyển sang Sign Up
+        // ===== Go to SignUp =====
         txtGoToSignUp.setOnClickListener(v -> {
-            startActivity(new Intent(SignInActivity.this, SignUpActivity.class));
+            startActivity(new Intent(this, SignUpActivity.class));
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
         });
 
-        // XỬ LÝ LOGIN
+        // ===== LOGIN BUTTON =====
         btnLogin.setOnClickListener(v -> {
+            if (isLoggingIn) return;
+
             String email = edtEmail.getText().toString().trim();
             String pass = edtPassword.getText().toString().trim();
 
@@ -64,33 +80,47 @@ public class SignInActivity extends AppCompatActivity {
                 return;
             }
 
+            isLoggingIn = true;
+            btnLogin.setEnabled(false);
+
+            Log.d(TAG, "signInWithEmailAndPassword()");
+
             auth.signInWithEmailAndPassword(email, pass)
                     .addOnCompleteListener(task -> {
+
+                        isLoggingIn = false;
+                        btnLogin.setEnabled(true);
+
+                        Log.d(TAG, "onComplete called");
+                        Log.d(TAG, "success=" + task.isSuccessful());
+
+                        if (task.getException() != null) {
+                            Log.e(TAG, "error", task.getException());
+                        }
+
                         if (task.isSuccessful()) {
 
                             SharedPreferences.Editor editor = pref.edit();
-
-                            // LƯU EMAIL + PASS
                             editor.putString("saved_email", email);
                             editor.putString("saved_pass", pass);
-
-                            // LƯU TRẠNG THÁI REMEMBER
                             editor.putBoolean("remember", checkRemember.isChecked());
-
                             editor.apply();
 
-                            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(SignInActivity.this, NotesActivity.class));
+                            Log.d(TAG, "LOGIN OK -> NotesActivity");
+
+                            startActivity(new Intent(this, NotesActivity.class));
                             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
                             finish();
 
                         } else {
-                            Toast.makeText(this,
-                                    "Login failed: " + task.getException().getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                            String msg = "Login failed";
+                            if (task.getException() != null &&
+                                    task.getException().getMessage() != null) {
+                                msg = task.getException().getMessage();
+                            }
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                         }
                     });
         });
     }
 }
-

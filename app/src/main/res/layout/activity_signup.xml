@@ -29,7 +29,7 @@
             android:id="@+id/txtTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create Account"
+            android:text="Đăng kí"
             android:textStyle="bold"
             android:textSize="28sp"
             android:textColor="#FFFFFF"
@@ -67,7 +67,7 @@
             android:id="@+id/btnSignUp"
             android:layout_width="match_parent"
             android:layout_height="55dp"
-            android:text="Sign Up"
+            android:text="Đăng kí"
             android:textColor="#FFFFFF"
             android:backgroundTint="#1E88E5"
             android:layout_marginTop="28dp"/>
@@ -76,7 +76,7 @@
             android:id="@+id/txtGoToSignIn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Already have an account? Sign In"
+            android:text="Đã có tài khoản? Đăng nhập"
             android:textSize="16sp"
             android:textColor="#FAFBFB"
             android:layout_marginTop="20dp"/>

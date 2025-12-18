@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="3dp"
+    android:foreground="?attr/selectableItemBackground">
+
+    <RelativeLayout
+        android:padding="14dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- TITLE -->
+        <TextView
+            android:id="@+id/txtTitle"
+            android:text="Ghi chú"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1E1E1E"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <!-- CONTENT PREVIEW -->
+        <TextView
+            android:id="@+id/txtContent"
+            android:layout_below="@id/txtTitle"
+            android:text="Nội dung ghi chú..."
+            android:textSize="14sp"
+            android:textColor="#666"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"/>
+
+        <!-- DELETE -->
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+
+            android:src="@drawable/ic_delete"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:padding="4dp"/>
+
+        <!-- RENAME -->
+        <ImageButton
+            android:id="@+id/btnRename"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_toStartOf="@id/btnDelete"
+            android:layout_marginEnd="12dp"
+
+            android:src="@drawable/ic_rename"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:padding="4dp"/>
+
+
+    </RelativeLayout>
+</androidx.cardview.widget.CardView>
+

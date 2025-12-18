@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/rootLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#FFFFFF"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- TITLE -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content">
+
+        <!-- BACK -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_back"
+            android:contentDescription="Back"/>
+
+        <!-- TITLE -->
+        <EditText
+            android:id="@+id/edtTitle"
+            android:hint="Tiêu đề"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@android:color/transparent"
+            android:layout_marginStart="8dp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
+
+
+    <!-- TOOLBAR (NGAY DƯỚI TITLE) -->
+    <LinearLayout
+        android:id="@+id/toolBar"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#FAFAFA"
+        android:elevation="6dp"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="0dp"
+        android:layout_height="56dp">
+
+        <ImageButton android:id="@+id/btnKeyboard" style="@style/ToolBtn" android:src="@drawable/ic_keyboard"/>
+        <ImageButton android:id="@+id/btnPen"      style="@style/ToolBtn" android:src="@drawable/ic_pen"/>
+        <ImageButton android:id="@+id/btnMarker"   style="@style/ToolBtn" android:src="@drawable/ic_marker"/>
+        <ImageButton android:id="@+id/btnEraser"   style="@style/ToolBtn" android:src="@drawable/ic_eraser"/>
+        <ImageButton android:id="@+id/btnUndo"     style="@style/ToolBtn" android:src="@drawable/ic_undo"/>
+        <ImageButton android:id="@+id/btnRedo"     style="@style/ToolBtn" android:src="@drawable/ic_redo"/>
+        <ImageButton android:id="@+id/btnLaser"    style="@style/ToolBtn" android:src="@drawable/ic_laser"/>
+
+    </LinearLayout>
+
+    <!-- CONTENT -->
+    <FrameLayout
+        android:id="@+id/noteContainer"
+        app:layout_constraintTop_toBottomOf="@id/toolBar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="0dp"
+        android:layout_height="0dp">
+
+        <!-- TEXT -->
+        <EditText
+            android:id="@+id/edtContent"
+            android:hint="Nội dung ghi chú"
+            android:textSize="16sp"
+            android:background="@android:color/transparent"
+            android:padding="16dp"
+            android:gravity="top"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <!-- DRAWING -->
+        <com.example.mynoesapplication.DrawingView
+            android:id="@+id/drawingView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </FrameLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
