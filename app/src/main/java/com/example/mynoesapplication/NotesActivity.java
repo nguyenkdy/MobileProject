@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -31,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class NotesActivity extends AppCompatActivity {
 
@@ -44,19 +44,20 @@ public class NotesActivity extends AppCompatActivity {
     FirebaseFirestore db;
     String uid;
 
-    // ================= Adapters & Data =================
+    // ================= Data =================
+    final List<Note> noteList = new ArrayList<>();
+    final List<Folder> folderList = new ArrayList<>();
+
     NotesAdapter notesAdapter;
     FoldersAdapter foldersAdapter;
 
-    List<Note> noteList;
-    List<Folder> folderList;
-
-    // ================= Firestore listeners =================
     ListenerRegistration notesListener;
     ListenerRegistration foldersListener;
 
     enum Mode { NOTES, FOLDERS }
     Mode currentMode = Mode.NOTES;
+
+    String currentFolderId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,14 +65,13 @@ public class NotesActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notes);
 
-        View root = findViewById(R.id.rootLayout);
-        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootLayout), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
-        // ================= ÁNH XẠ VIEW =================
+        // UI
         btnOption = findViewById(R.id.btnOption);
         btnSetting = findViewById(R.id.btnSetting);
         btnAdd = findViewById(R.id.btnAdd);
@@ -81,7 +81,7 @@ public class NotesActivity extends AppCompatActivity {
         recyclerNotes.setLayoutManager(new LinearLayoutManager(this));
         recyclerNotes.setItemAnimator(new DefaultItemAnimator());
 
-        // ================= FIREBASE =================
+        // Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
@@ -91,42 +91,35 @@ public class NotesActivity extends AppCompatActivity {
             finish();
             return;
         }
-        uid = user.getUid();
+        uid = Objects.requireNonNull(user).getUid();
 
-        // ================= DATA =================
-        noteList = new ArrayList<>();
-        folderList = new ArrayList<>();
-
+        // Adapters
         notesAdapter = new NotesAdapter(noteList);
-        foldersAdapter = new FoldersAdapter(folderList);
+
+
+        foldersAdapter = new FoldersAdapter(folderList, folder -> {
+            loadNotesInFolder(folder);
+        });
 
         recyclerNotes.setAdapter(notesAdapter);
 
-        // ================= LOAD DEFAULT =================
+        // Load default
         loadAllNotes();
 
-        // ================= EVENTS =================
+        // Events
         btnOption.setOnClickListener(v -> showOptionMenu());
         btnSetting.setOnClickListener(v -> showSettingMenu());
         btnAdd.setOnClickListener(v -> showCreateMenu());
     }
 
-    // ==================================================
-    // LOAD NOTES
-    // ==================================================
+    // ================= LOAD ALL NOTES =================
     private void loadAllNotes() {
         currentMode = Mode.NOTES;
+        currentFolderId = null;
         txtFolderTitle.setText("Tất cả ghi chú");
         recyclerNotes.setAdapter(notesAdapter);
 
-        if (foldersListener != null) {
-            foldersListener.remove();
-            foldersListener = null;
-        }
-
-        if (notesListener != null) {
-            notesListener.remove();
-        }
+        removeListeners();
 
         notesListener = db.collection("users")
                 .document(uid)
@@ -134,35 +127,53 @@ public class NotesActivity extends AppCompatActivity {
                 .orderBy("updatedAt", Query.Direction.DESCENDING)
                 .addSnapshotListener(this, (value, error) -> {
                     if (error != null || value == null) return;
-
                     noteList.clear();
                     for (DocumentSnapshot doc : value.getDocuments()) {
-                        Note note = doc.toObject(Note.class);
-                        if (note != null) {
-                            note.id = doc.getId();
-                            noteList.add(note);
+                        Note n = doc.toObject(Note.class);
+                        if (n != null) {
+                            n.id = doc.getId();
+                            noteList.add(n);
                         }
                     }
                     notesAdapter.notifyDataSetChanged();
                 });
     }
 
-    // ==================================================
-    // LOAD FOLDERS
-    // ==================================================
+    // ================= LOAD NOTES IN FOLDER =================
+    private void loadNotesInFolder(Folder folder) {
+        currentMode = Mode.NOTES;
+        currentFolderId = folder.id;
+        txtFolderTitle.setText(folder.name);
+        recyclerNotes.setAdapter(notesAdapter);
+
+        removeListeners();
+
+        notesListener = db.collection("users")
+                .document(uid)
+                .collection("notes")
+                .whereEqualTo("folderId", folder.id)
+                .orderBy("updatedAt", Query.Direction.DESCENDING)
+                .addSnapshotListener(this, (value, error) -> {
+                    if (error != null || value == null) return;
+                    noteList.clear();
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        Note n = doc.toObject(Note.class);
+                        if (n != null) {
+                            n.id = doc.getId();
+                            noteList.add(n);
+                        }
+                    }
+                    notesAdapter.notifyDataSetChanged();
+                });
+    }
+
+    // ================= LOAD FOLDERS =================
     private void loadFolders() {
         currentMode = Mode.FOLDERS;
         txtFolderTitle.setText("Thư mục");
         recyclerNotes.setAdapter(foldersAdapter);
 
-        if (notesListener != null) {
-            notesListener.remove();
-            notesListener = null;
-        }
-
-        if (foldersListener != null) {
-            foldersListener.remove();
-        }
+        removeListeners();
 
         foldersListener = db.collection("users")
                 .document(uid)
@@ -170,7 +181,6 @@ public class NotesActivity extends AppCompatActivity {
                 .orderBy("createdAt", Query.Direction.ASCENDING)
                 .addSnapshotListener(this, (value, error) -> {
                     if (error != null || value == null) return;
-
                     folderList.clear();
                     for (DocumentSnapshot doc : value.getDocuments()) {
                         Folder f = doc.toObject(Folder.class);
@@ -183,9 +193,7 @@ public class NotesActivity extends AppCompatActivity {
                 });
     }
 
-    // ==================================================
-    // CREATE MENU (+)
-    // ==================================================
+    // ================= CREATE =================
     private void showCreateMenu() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         var view = getLayoutInflater().inflate(R.layout.bottom_sheet_create, null);
@@ -208,25 +216,30 @@ public class NotesActivity extends AppCompatActivity {
         Map<String, Object> note = new HashMap<>();
         note.put("title", "Ghi chú mới");
         note.put("content", "");
-        note.put("folderId", null);
+        note.put("folderId", currentFolderId);
         note.put("createdAt", Timestamp.now());
         note.put("updatedAt", Timestamp.now());
 
         db.collection("users")
                 .document(uid)
                 .collection("notes")
-                .add(note);
+                .add(note)
+                .addOnSuccessListener(doc -> {
+                    Intent i = new Intent(this, EditNoteActivity.class);
+                    i.putExtra("noteId", doc.getId());
+                    startActivity(i);
+                });
     }
 
     private void showCreateFolderDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Tạo thư mục");
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
+        b.setTitle("Tạo thư mục");
 
         EditText input = new EditText(this);
         input.setHint("Tên thư mục");
-        builder.setView(input);
+        b.setView(input);
 
-        builder.setPositiveButton("Tạo", (d, w) -> {
+        b.setPositiveButton("Tạo", (d, w) -> {
             String name = input.getText().toString().trim();
             if (name.isEmpty()) return;
 
@@ -240,13 +253,11 @@ public class NotesActivity extends AppCompatActivity {
                     .add(folder);
         });
 
-        builder.setNegativeButton("Hủy", null);
-        builder.show();
+        b.setNegativeButton("Hủy", null);
+        b.show();
     }
 
-    // ==================================================
-    // OPTION MENU
-    // ==================================================
+    // ================= MENUS =================
     private void showOptionMenu() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         var view = getLayoutInflater().inflate(R.layout.bottom_sheet_options, null);
@@ -265,9 +276,6 @@ public class NotesActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // ==================================================
-    // SETTING MENU
-    // ==================================================
     private void showSettingMenu() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         var view = getLayoutInflater().inflate(R.layout.bottom_sheet_setting, null);
@@ -284,10 +292,20 @@ public class NotesActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private void removeListeners() {
+        if (notesListener != null) {
+            notesListener.remove();
+            notesListener = null;
+        }
+        if (foldersListener != null) {
+            foldersListener.remove();
+            foldersListener = null;
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (notesListener != null) notesListener.remove();
-        if (foldersListener != null) foldersListener.remove();
+        removeListeners();
     }
 }

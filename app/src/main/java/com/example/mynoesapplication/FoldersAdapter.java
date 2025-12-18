@@ -12,10 +12,18 @@ import java.util.List;
 
 public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderViewHolder> {
 
-    List<Folder> folders;
+    // ================= CALLBACK =================
+    public interface OnFolderClickListener {
+        void onFolderClick(Folder folder);
+    }
 
-    public FoldersAdapter(List<Folder> folders) {
+    private final List<Folder> folders;
+    private final OnFolderClickListener listener;
+
+    // ================= CONSTRUCTOR =================
+    public FoldersAdapter(List<Folder> folders, OnFolderClickListener listener) {
         this.folders = folders;
+        this.listener = listener;
     }
 
     @NonNull
@@ -31,28 +39,32 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
         Folder f = folders.get(i);
         h.txtFolderName.setText(f.name);
 
-        // CLICK ANIMATION (GIỐNG NOTE)
+        // CLICK + ANIMATION + CALLBACK
         h.itemView.setOnClickListener(v -> {
             v.animate()
                     .scaleX(0.97f)
                     .scaleY(0.97f)
                     .setDuration(80)
-                    .withEndAction(() ->
-                            v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(80)
-                    );
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(80);
 
+                        // 🔥 CALLBACK TRẢ VỀ ACTIVITY
+                        if (listener != null) {
+                            listener.onFolderClick(f);
+                        }
+                    });
         });
     }
 
-
     @Override
     public int getItemCount() {
-        return folders.size();
+        return folders == null ? 0 : folders.size();
     }
 
+    // ================= VIEW HOLDER =================
     static class FolderViewHolder extends RecyclerView.ViewHolder {
         TextView txtFolderName;
 
@@ -61,6 +73,4 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
             txtFolderName = v.findViewById(R.id.txtFolderName);
         }
     }
-
-
 }
