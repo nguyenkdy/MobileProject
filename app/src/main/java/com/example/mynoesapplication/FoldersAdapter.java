@@ -44,7 +44,6 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                                     .setDuration(80)
                     );
 
-            // TODO: sau này mở note trong folder
         });
     }
 
