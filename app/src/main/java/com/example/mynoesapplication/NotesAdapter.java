@@ -3,11 +3,15 @@ package com.example.mynoesapplication;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,6 +21,7 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
@@ -24,6 +29,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     private final List<Note> notes;
     private final FirebaseFirestore db;
     private final String uid;
+    private boolean isEditMode = false;
 
     public NotesAdapter(List<Note> notes) {
         this.notes = notes;
@@ -36,14 +42,18 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     // ================= VIEW HOLDER =================
     static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView txtTitle, txtContent;
-        ImageButton btnDelete, btnRename;
+        ImageView imgPreview;   // ⭐ THÊM DÒNG NÀY
+
+        ImageButton btnOptions;
+        CheckBox chkSelect;
 
         public NoteViewHolder(@NonNull View v) {
             super(v);
             txtTitle = v.findViewById(R.id.txtTitle);
             txtContent = v.findViewById(R.id.txtContent);
-            btnDelete = v.findViewById(R.id.btnDelete);
-            btnRename = v.findViewById(R.id.btnRename);
+            btnOptions = v.findViewById(R.id.btnOptions);
+            chkSelect = v.findViewById(R.id.chkSelect);
+            imgPreview = v.findViewById(R.id.imgPreview); // ⭐⭐⭐ THIẾU DÒNG NÀY
         }
     }
 
@@ -59,63 +69,112 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     public void onBindViewHolder(@NonNull NoteViewHolder h, int position) {
         Note note = notes.get(position);
 
+        h.txtTitle.setText(note.title);
+
+        Bitmap thumb = ThumbnailCache.load(
+                h.itemView.getContext(),
+                note.id
+        );
+
+        if (thumb != null) {
+            // ✅ Có nét vẽ → hiện preview
+            h.imgPreview.setVisibility(View.VISIBLE);
+            h.imgPreview.setImageBitmap(thumb);
+        } else {
+            // ❌ Không có nét vẽ → ẩn hoàn toàn preview
+            h.imgPreview.setVisibility(View.GONE);
+        }
+
+        // ===== TITLE =====
         h.txtTitle.setText(
                 note.title == null || note.title.trim().isEmpty()
                         ? "Không tiêu đề"
-                        : note.title
+                        : note.title.trim()
         );
-        h.txtContent.setText(note.content == null ? "" : note.content);
 
-        // ================= CLICK NOTE =================
+        // ===== CONTENT PREVIEW =====
+        if (note.content == null || note.content.trim().isEmpty()) {
+            h.txtContent.setText("");
+        } else {
+            String preview = note.content.trim().replaceAll("\\n{2,}", "\n");
+            if (preview.length() > 150) {
+                preview = preview.substring(0, 150) + "...";
+            }
+            h.txtContent.setText(preview);
+        }
+
+
+        // ===== EDIT MODE =====
+        h.chkSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
+        h.chkSelect.setChecked(note.selected);
+        h.btnOptions.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
+
+        // CLICK CHECKBOX
+        h.chkSelect.setOnClickListener(v -> {
+            note.selected = h.chkSelect.isChecked();
+        });
+
+        // ===== CLICK CARD (GIỮ ANIMATION CŨ) =====
         h.itemView.setOnClickListener(v -> {
             v.animate()
                     .scaleX(0.97f)
                     .scaleY(0.97f)
                     .setDuration(80)
                     .withEndAction(() -> {
-                        v.animate().scaleX(1f).scaleY(1f).setDuration(80);
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(80);
 
-                        Context ctx = v.getContext();
-                        Intent i = new Intent(ctx, EditNoteActivity.class);
-                        i.putExtra("noteId", note.id);
-                        ctx.startActivity(i);
+                        if (isEditMode) {
+                            note.selected = !note.selected;
+                            h.chkSelect.setChecked(note.selected);
+                        } else {
+                            Context ctx = v.getContext();
+                            Intent i = new Intent(ctx, EditNoteActivity.class);
+                            i.putExtra("noteId", note.id);
+                            ctx.startActivity(i);
+                        }
                     });
         });
 
-        // ================= DELETE NOTE =================
-        h.btnDelete.setOnClickListener(v -> {
-            if (uid == null || note.id == null) return;
-
-            new AlertDialog.Builder(v.getContext())
-                    .setTitle("Xóa ghi chú?")
-                    .setMessage("Ghi chú sẽ bị xóa vĩnh viễn.")
-                    .setPositiveButton("Xóa", (d, w) -> {
-
-                        // 1️⃣ TÌM POSITION TRƯỚC
-                        int pos = findPositionById(note.id);
-                        if (pos == -1) return;
-
-                        // 2️⃣ XÓA LOCAL TRƯỚC (🔥 UI BIẾN NGAY)
-                        notes.remove(pos);
-                        notifyItemRemoved(pos);
-
-                        // 3️⃣ XÓA FIRESTORE (SYNC NGẦM)
-                        db.collection("users")
-                                .document(uid)
-                                .collection("notes")
-                                .document(note.id)
-                                .delete();
-                    })
-                    .setNegativeButton("Hủy", null)
-                    .show();
-        });
-
-
-        // ================= RENAME NOTE (🔥 FIX CHÍNH) =================
-        h.btnRename.setOnClickListener(v -> showRenameDialog(v.getContext(), note));
+        // ===== OPTIONS =====
+        h.btnOptions.setOnClickListener(v -> showNoteOptions(v, note));
     }
 
-    // ================= RENAME DIALOG =================
+    // ================= POPUP OPTIONS =================
+    private void showNoteOptions(View anchor, Note note) {
+        View popupView = LayoutInflater.from(anchor.getContext())
+                .inflate(R.layout.popup_note_options, null);
+
+        PopupWindow popup = new PopupWindow(
+                popupView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        popup.setElevation(12f);
+        popup.setOutsideTouchable(true);
+        popup.showAsDropDown(anchor, -120, 10);
+
+        popupView.findViewById(R.id.optRename).setOnClickListener(v -> {
+            popup.dismiss();
+            showRenameDialog(anchor.getContext(), note);
+        });
+
+        popupView.findViewById(R.id.optPin).setOnClickListener(v -> {
+            popup.dismiss();
+            togglePin(note);
+        });
+
+        popupView.findViewById(R.id.optDelete).setOnClickListener(v -> {
+            popup.dismiss();
+            moveToTrash(anchor.getContext(), note);
+        });
+    }
+
+    // ================= RENAME =================
     private void showRenameDialog(Context ctx, Note note) {
         if (uid == null || note.id == null) return;
 
@@ -130,7 +189,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                     String newTitle = edt.getText().toString().trim();
                     if (newTitle.isEmpty()) return;
 
-                    // 1️⃣ UPDATE FIRESTORE
                     db.collection("users")
                             .document(uid)
                             .collection("notes")
@@ -139,28 +197,65 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                                     "title", newTitle,
                                     "updatedAt", Timestamp.now()
                             );
-
-                    // 2️⃣ UPDATE LOCAL DATA (🔥 QUAN TRỌNG)
-                    note.title = newTitle;
-
-                    // 3️⃣ UPDATE UI NGAY LẬP TỨC
-                    int pos = findPositionById(note.id);
-                    if (pos != -1) {
-                        notifyItemChanged(pos);
-                    }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
-    // ================= FIND POSITION =================
-    private int findPositionById(String noteId) {
-        for (int i = 0; i < notes.size(); i++) {
-            if (notes.get(i).id != null && notes.get(i).id.equals(noteId)) {
-                return i;
-            }
-        }
-        return -1;
+    // ================= MOVE TO TRASH =================
+    private void moveToTrash(Context ctx, Note note) {
+        if (uid == null || note.id == null) return;
+
+        new AlertDialog.Builder(ctx)
+                .setTitle("Chuyển vào Thùng rác?")
+                .setPositiveButton("Đồng ý", (d, w) -> {
+                    db.collection("users")
+                            .document(uid)
+                            .collection("notes")
+                            .document(note.id)
+                            .update(
+                                    "deleted", true,
+                                    "deletedAt", Timestamp.now()
+                            );
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    // ================= PIN =================
+    private void togglePin(Note note) {
+        if (uid == null || note.id == null) return;
+
+        db.collection("users")
+                .document(uid)
+                .collection("notes")
+                .document(note.id)
+                .update(
+                        "isPinned", !note.isPinned,
+                        "updatedAt", Timestamp.now()
+                );
+    }
+
+    // ================= MULTI SELECT =================
+    public void setEditMode(boolean editMode) {
+        this.isEditMode = editMode;
+        notifyDataSetChanged();
+    }
+
+    public List<Note> getSelectedNotes() {
+        List<Note> res = new ArrayList<>();
+        for (Note n : notes) if (n.selected) res.add(n);
+        return res;
+    }
+
+    public void selectAll(boolean value) {
+        for (Note n : notes) n.selected = value;
+        notifyDataSetChanged();
+    }
+
+    public void clearSelection() {
+        for (Note n : notes) n.selected = false;
+        notifyDataSetChanged();
     }
 
     @Override

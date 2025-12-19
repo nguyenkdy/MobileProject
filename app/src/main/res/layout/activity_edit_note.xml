@@ -65,6 +65,12 @@
         <ImageButton android:id="@+id/btnUndo"     style="@style/ToolBtn" android:src="@drawable/ic_undo"/>
         <ImageButton android:id="@+id/btnRedo"     style="@style/ToolBtn" android:src="@drawable/ic_redo"/>
         <ImageButton android:id="@+id/btnLaser"    style="@style/ToolBtn" android:src="@drawable/ic_laser"/>
+        <!-- ⭐ PALETTE (THÊM MỚI – KHÔNG ẢNH HƯỞNG CODE CŨ) -->
+        <ImageButton
+            android:id="@+id/btnPalette"
+            style="@style/ToolBtn"
+            android:src="@drawable/ic_palette"
+            android:contentDescription="Chọn màu"/>
 
     </LinearLayout>
 

@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
-    <!-- TOP BAR: 3 CỘT (Option – Title – Setting) -->
+    <!-- ================= TOP BAR ================= -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:background="#FFFFFF"
         android:elevation="6dp"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
+        android:paddingHorizontal="12dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- CỘT 1: Nút Option -->
+        <!-- OPTION -->
         <ImageButton
             android:id="@+id/btnOption"
             android:layout_width="32dp"
@@ -26,13 +26,11 @@
             android:src="@drawable/ic_option"
             app:tint="#1E1E1E"
             android:scaleType="centerInside"
-            android:adjustViewBounds="true"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
 
-
-        <!-- CỘT 2: Text hiển thị tùy chọn -->
+        <!-- TITLE -->
         <TextView
             android:id="@+id/txtFolderTitle"
             android:layout_width="0dp"
@@ -41,15 +39,29 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#1E1E1E"
+            android:gravity="center_vertical"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginHorizontal="12dp"
             app:layout_constraintStart_toEndOf="@id/btnOption"
+            app:layout_constraintEnd_toStartOf="@id/btnEdit"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- EDIT -->
+        <ImageButton
+            android:id="@+id/btnEdit"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_edit"
+            android:scaleType="centerInside"
             app:layout_constraintEnd_toStartOf="@id/btnSetting"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:gravity="center_vertical" />
+            android:layout_marginEnd="12dp"/>
 
-        <!-- CỘT 3: Nút Setting -->
+        <!-- SETTING -->
         <ImageButton
             android:id="@+id/btnSetting"
             android:layout_width="30dp"
@@ -58,34 +70,94 @@
             android:src="@drawable/ic_setting"
             app:tint="#1E1E1E"
             android:scaleType="centerInside"
-            android:adjustViewBounds="true"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- RECYCLER VIEW -->
+    <!-- ================= RECYCLER VIEW ================= -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerNotes"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:padding="12dp"
+        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:clipToPadding="false" />
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"/>
 
+    <!-- ================= BOTTOM ACTION BAR ================= -->
+    <LinearLayout
+        android:id="@+id/bottomActionBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="#FFFFFF"
+        android:elevation="10dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- CHỌN TẤT CẢ -->
+        <TextView
+            android:id="@+id/btnSelectAll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Chọn tất cả"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:foreground="?attr/selectableItemBackground"/>
+
+        <!-- DIVIDER -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#E0E0E0"/>
+
+        <!-- DI CHUYỂN -->
+        <TextView
+            android:id="@+id/btnMove"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Di chuyển"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:foreground="?attr/selectableItemBackground"/>
+
+        <!-- DIVIDER -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#E0E0E0"/>
+
+        <!-- XÓA -->
+        <TextView
+            android:id="@+id/btnDeleteAll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Xóa"
+            android:textColor="#D32F2F"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:foreground="?attr/selectableItemBackground"/>
+
+    </LinearLayout>
+
+    <!-- ================= FAB ADD ================= -->
     <ImageButton
         android:id="@+id/btnAdd"
         android:layout_width="56dp"
         android:layout_height="56dp"
+        android:layout_margin="20dp"
         android:background="@android:color/transparent"
         android:src="@drawable/ic_add"
         android:scaleType="centerInside"
-        android:padding="0dp"
-
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="20dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

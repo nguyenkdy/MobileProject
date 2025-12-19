@@ -29,6 +29,10 @@
         <activity
             android:name=".EditNoteActivity"
             android:exported="false"/>
+        <activity
+            android:name=".TrashActivity"
+            android:exported="false" />
+
 
     </application>
 
