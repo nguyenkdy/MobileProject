@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -159,5 +160,30 @@
         android:scaleType="centerInside"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+    <!-- ================= FAB CHAT BOT ================= -->
+    <ImageButton
+        android:id="@+id/btnOpenChat"
+        android:layout_width="54dp"
+        android:layout_height="53dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="Open chat"
+        android:elevation="8dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/chat_bubble_bot"
+        app:layout_constraintBottom_toTopOf="@+id/btnAdd"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="#1E88E5" />
 
+    <FrameLayout
+        android:id="@+id/chat_container"
+        android:layout_width="280dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_popup_note"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btnOpenChat" />
 </androidx.constraintlayout.widget.ConstraintLayout>

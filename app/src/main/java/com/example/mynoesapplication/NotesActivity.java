@@ -38,12 +38,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.example.mynoesapplication.Fragment.*;
+import android.view.View;
+import android.widget.FrameLayout;
+import androidx.activity.OnBackPressedCallback;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
 public class NotesActivity extends AppCompatActivity {
 
     // ================= UI =================
     ImageButton btnOption, btnSetting, btnAdd;
     TextView txtFolderTitle;
     RecyclerView recyclerNotes;
+    ImageButton btnChatbot;
+    FrameLayout chatContainer;
 
     // ================= Firebase =================
     FirebaseAuth mAuth;
@@ -93,6 +102,9 @@ public class NotesActivity extends AppCompatActivity {
         btnAdd = findViewById(R.id.btnAdd);
         txtFolderTitle = findViewById(R.id.txtFolderTitle);
         recyclerNotes = findViewById(R.id.recyclerNotes);
+        btnChatbot = findViewById(R.id.btnOpenChat);
+        chatContainer = findViewById(R.id.chat_container);
+
 
         recyclerNotes.setLayoutManager(new LinearLayoutManager(this));
         recyclerNotes.setItemAnimator(new DefaultItemAnimator());
@@ -140,7 +152,49 @@ public class NotesActivity extends AppCompatActivity {
         if (btnSelectAll != null) btnSelectAll.setOnClickListener(v -> onSelectAllClicked());
         if (btnMove != null) btnMove.setOnClickListener(v -> onMoveClicked());
         if (btnDelete != null) btnDelete.setOnClickListener(v -> onDeleteClicked());
+        if (btnChatbot != null) {
+            btnChatbot.setOnClickListener(v -> {
+                FragmentManager fm = getSupportFragmentManager();
+                Fragment existing = fm.findFragmentByTag("chat_overlay");
 
+                if (chatContainer != null && chatContainer.getVisibility() == View.VISIBLE) {
+                    if (existing != null) {
+                        fm.beginTransaction().remove(existing).commitAllowingStateLoss();
+                    }
+                    chatContainer.setVisibility(View.GONE);
+                } else {
+                    fm.beginTransaction()
+                            .replace(R.id.chat_container, new com.example.mynoesapplication.Fragment.ChatFragment(), "chat_overlay")
+                            .commitAllowingStateLoss();
+                    if (chatContainer != null) chatContainer.setVisibility(View.VISIBLE);
+                }
+            });
+        }
+
+// Register back callback outside the btnChatbot null-check so it always runs
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (chatContainer != null && chatContainer.getVisibility() == View.VISIBLE) {
+                    Fragment f = getSupportFragmentManager().findFragmentByTag("chat_overlay");
+                    if (f != null) getSupportFragmentManager().beginTransaction().remove(f).commitAllowingStateLoss();
+                    chatContainer.setVisibility(View.GONE);
+                    return;
+                }
+
+                if (isEditMode) {
+                    toggleEditMode();
+                    return;
+                }
+
+                if (!ROOT.equals(currentFolderId)) {
+                    loadFolders();
+                    return;
+                }
+
+                finish();
+            }
+        });
         updateBottomActionBar();
     }
 

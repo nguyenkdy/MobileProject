@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/chat_overlay_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp"
+    android:background="@drawable/bg_popup_note">
+
+    <ImageButton
+        android:id="@+id/btnCloseChat"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="end|top"
+        android:contentDescription="Close"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        app:tint="@android:color/darker_gray"/>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChat"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp">
+
+            <LinearLayout
+                android:id="@+id/modeButtons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+
+                <ImageButton
+                    android:id="@+id/btnModeChat"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="Text mode"
+                    android:src="@drawable/ic_chat"
+                    android:layout_marginEnd="0dp"
+                    android:scaleType="centerInside"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    app:tint="@null" />
+
+                <ImageButton
+                    android:id="@+id/btnModeNote"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="Note mode"
+                    android:src="@drawable/ic_text"
+                    android:layout_marginEnd="0dp"
+                    android:scaleType="centerInside"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    app:tint="@null" />
+
+                <ImageButton
+                    android:id="@+id/btnModeMicro"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="Voice"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/darker_gray"/>
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/edtMessage"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="40dp"
+                android:layout_marginStart="0dp"
+                android:hint="Nhập tin nhắn..."
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"/>
+
+            <ImageButton
+                android:id="@+id/btnSend"
+                android:layout_width="48dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_send"
+                android:background="?android:attr/selectableItemBackgroundBorderless"/>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
