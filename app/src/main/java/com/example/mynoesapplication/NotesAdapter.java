@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,10 +14,23 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.mynoesapplication.Data.*;
+import com.example.mynoesapplication.Fragment.*;
+import com.example.mynoesapplication.RetrofitClient.*;
+
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mynoesapplication.Fragment.NoteSummaryFragment;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -172,6 +186,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             popup.dismiss();
             moveToTrash(anchor.getContext(), note);
         });
+
+        popupView.findViewById(R.id.optSummary).setOnClickListener(v -> {
+            popup.dismiss();
+            handleOptSummary(anchor, note);
+            //Toast.makeText(anchor.getContext(), "Tính năng đang phát triển", Toast.LENGTH_SHORT).show();
+        });
+
     }
 
     // ================= RENAME =================
@@ -235,6 +256,76 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         "updatedAt", Timestamp.now()
                 );
     }
+
+    // ================= SUMMARY =================
+
+    private void handleOptSummary(View anchor, Note note) {
+        Context ctx = anchor.getContext();
+        if (!(ctx instanceof FragmentActivity)) {
+            Toast.makeText(ctx, "Need FragmentActivity to show summary", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1) Extract text data only (title + content)
+        String title = note.title == null ? "" : note.title.trim();
+        String content = note.content == null ? "" : note.content.trim();
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("Summarize the following note in 2-10 concise sentences or rows.\n\n");
+        if (!title.isEmpty()) {
+            prompt.append("Title: ").append(title).append("\n\n");
+        }
+        if (!content.isEmpty()) {
+            prompt.append("Content:\n").append(content).append("\n\n");
+        }
+        prompt.append("Return a short, clear summary and in Vietnamese.");
+
+        // 2) Show right-side fragment (or overlay) and display loading
+        FragmentActivity activity = (FragmentActivity) ctx;
+        NoteSummaryFragment frag = NoteSummaryFragment.findOrCreate(activity.getSupportFragmentManager());
+        frag.showLoading();
+
+        // 3) Call AI service (Retrofit) - text only
+        AiRequest req = new AiRequest(prompt.toString());
+        AiApiService.getApi().summarize(req)
+                .enqueue(new Callback<AiResponse>() {
+                    @Override
+                    public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
+
+                        Log.d("AI_API", "HTTP code = " + response.code());
+
+                        if (response.isSuccessful()
+                                && response.body() != null
+                                && response.body().getSummary() != null) {
+
+                            frag.showSummary(response.body().getSummary());
+
+                        } else {
+                            String msg = "AI error";
+                            try {
+                                if (response.errorBody() != null) {
+                                    msg = response.errorBody().string();
+                                    Log.e("AI_API", "Error body: " + msg);
+                                } else {
+                                    Log.e("AI_API", "Error body is null");
+                                }
+                            } catch (Exception e) {
+                                Log.e("AI_API", "Read errorBody failed", e);
+                            }
+
+                            frag.showSummary("Failed to summarize: " + msg);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<AiResponse> call, Throwable t) {
+                        Log.e("AI_API", "Call failed", t);
+                        frag.showSummary("AI call failed: " + t.getMessage());
+                    }
+                });
+
+    }
+
 
     // ================= MULTI SELECT =================
     public void setEditMode(boolean editMode) {

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/summaryRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Scrim to dim background and allow dismiss by tapping outside -->
+    <View
+        android:id="@+id/scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000" />
+
+    <!-- Right-side panel container -->
+    <FrameLayout
+        android:id="@+id/panel"
+        android:layout_width="320dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:padding="16dp"
+        android:background="@drawable/bg_popup_note">
+
+        <!-- Close button (top-right inside panel) -->
+        <ImageButton
+            android:id="@+id/btnClose"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|top"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close"
+            android:scaleType="center"
+            android:padding="6dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+
+        <!-- Progress loading -->
+        <ProgressBar
+            android:id="@+id/progressSummary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <!-- Summary text -->
+        <TextView
+            android:id="@+id/txtSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="56dp"
+            android:text=""
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:lineSpacingExtra="4dp" />
+
+    </FrameLayout>
+</FrameLayout>
