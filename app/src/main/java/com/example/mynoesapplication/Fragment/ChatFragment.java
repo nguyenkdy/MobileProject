@@ -135,7 +135,7 @@ public class ChatFragment extends Fragment {
     }
 
     private void callAiForReply(String prompt) {
-        AiRequest req = new AiRequest(prompt +"in Vietnamese.");
+        AiRequest req = new AiRequest(prompt +", answer in Vietnamese, nicely and shortly.");
         AiApiService.getApi().summarize(req)
                 .enqueue(new Callback<AiResponse>() {
                     @Override
