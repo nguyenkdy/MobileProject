@@ -30,7 +30,16 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
+import android.net.Uri;
+import android.provider.DocumentsContract;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,6 +83,8 @@ public class NotesActivity extends AppCompatActivity {
     private ScreenMode currentMode = ScreenMode.NOTES;
 
     boolean isEditMode = false;
+    private ActivityResultLauncher<Intent> pickPdfLauncher;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,17 +142,27 @@ public class NotesActivity extends AppCompatActivity {
 
         bottomActionBar = findViewById(R.id.bottomActionBar);
 
-        // ✅ BƯỚC 5: ánh xạ 3 nút
         btnSelectAll = findViewById(R.id.btnSelectAll);
         btnMove = findViewById(R.id.btnMove);
         btnDelete = findViewById(R.id.btnDeleteAll);
 
-        // ✅ BƯỚC 5: click action
         if (btnSelectAll != null) btnSelectAll.setOnClickListener(v -> onSelectAllClicked());
         if (btnMove != null) btnMove.setOnClickListener(v -> onMoveClicked());
         if (btnDelete != null) btnDelete.setOnClickListener(v -> onDeleteClicked());
 
         updateBottomActionBar();
+        pickPdfLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri pdfUri = result.getData().getData();
+                        if (pdfUri != null) {
+                            importPdfIntoApp(pdfUri);
+                        }
+                    }
+                }
+        );
+
     }
 
     // ==================================================
@@ -297,6 +318,10 @@ public class NotesActivity extends AppCompatActivity {
         view.findViewById(R.id.optCreateFolder).setOnClickListener(v -> {
             dialog.dismiss();
             showCreateFolderDialog();
+        });
+        view.findViewById(R.id.optCreatePdf).setOnClickListener(v -> {
+            dialog.dismiss();
+            openPdfImporter();   // ✅ IMPORT PDF
         });
 
         dialog.setContentView(view);
@@ -813,5 +838,61 @@ public class NotesActivity extends AppCompatActivity {
                 })
                 .show();
     }
+
+    private void openPdfImporter() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+
+        pickPdfLauncher.launch(intent);
+    }
+
+    private void importPdfIntoApp(Uri uri) {
+        try {
+            File dir = new File(getFilesDir(), "pdfs");
+            if (!dir.exists()) dir.mkdirs();
+
+            String fileName = "pdf_" + System.currentTimeMillis() + ".pdf";
+            File outFile = new File(dir, fileName);
+
+            InputStream in = getContentResolver().openInputStream(uri);
+            FileOutputStream out = new FileOutputStream(outFile);
+
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+            in.close(); out.close();
+
+            // ✅ TẠO NOTE PDF
+            Timestamp now = Timestamp.now();
+            Map<String, Object> note = new HashMap<>();
+            note.put("title", fileName);
+            note.put("type", "pdf");
+            note.put("pdfPath", outFile.getAbsolutePath());
+            note.put("folderId", currentFolderId); // 🔥 FIX Ở ĐÂY
+            note.put("createdAt", now);
+            note.put("updatedAt", now);
+            note.put("deleted", false);
+
+            db.collection("users")
+                    .document(uid)
+                    .collection("notes")
+                    .add(note)
+                    .addOnSuccessListener(doc -> {
+                        openPdfEditor(doc.getId(), outFile.getAbsolutePath());
+                    });
+
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Import PDF lỗi", Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void openPdfEditor(String noteId, String path) {
+        Intent i = new Intent(this, PdfEditorActivity.class);
+        i.putExtra("noteId", noteId);
+        i.putExtra("pdfPath", path);
+        startActivity(i);
+    }
+
 
 }

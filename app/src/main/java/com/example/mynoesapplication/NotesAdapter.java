@@ -13,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -42,8 +43,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     // ================= VIEW HOLDER =================
     static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView txtTitle, txtContent;
-        ImageView imgPreview;   // ⭐ THÊM DÒNG NÀY
-
+        ImageView imgPreview;
         ImageButton btnOptions;
         CheckBox chkSelect;
 
@@ -53,7 +53,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             txtContent = v.findViewById(R.id.txtContent);
             btnOptions = v.findViewById(R.id.btnOptions);
             chkSelect = v.findViewById(R.id.chkSelect);
-            imgPreview = v.findViewById(R.id.imgPreview); // ⭐⭐⭐ THIẾU DÒNG NÀY
+            imgPreview = v.findViewById(R.id.imgPreview);
         }
     }
 
@@ -69,52 +69,73 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     public void onBindViewHolder(@NonNull NoteViewHolder h, int position) {
         Note note = notes.get(position);
 
-        h.txtTitle.setText(note.title);
-
-        Bitmap thumb = ThumbnailCache.load(
-                h.itemView.getContext(),
-                note.id
-        );
-
-        if (thumb != null) {
-            // ✅ Có nét vẽ → hiện preview
-            h.imgPreview.setVisibility(View.VISIBLE);
-            h.imgPreview.setImageBitmap(thumb);
-        } else {
-            // ❌ Không có nét vẽ → ẩn hoàn toàn preview
-            h.imgPreview.setVisibility(View.GONE);
-        }
-
-        // ===== TITLE =====
+        // ================= TITLE =================
         h.txtTitle.setText(
                 note.title == null || note.title.trim().isEmpty()
                         ? "Không tiêu đề"
                         : note.title.trim()
         );
 
-        // ===== CONTENT PREVIEW =====
+        // ================= PREVIEW IMAGE =================
+        Bitmap thumb = ThumbnailCache.load(
+                h.itemView.getContext(),
+                note.id
+        );
+
+        if (thumb != null) {
+            h.imgPreview.setVisibility(View.VISIBLE);
+            h.imgPreview.setImageBitmap(thumb);
+        } else {
+            h.imgPreview.setVisibility(View.GONE);
+
+            // 🔥 CHỈ TẠO THUMBNAIL CHO PDF
+            if ("pdf".equalsIgnoreCase(note.type)
+                    && note.pdfPath != null
+                    && !note.pdfPath.trim().isEmpty()) {
+
+                new Thread(() -> {
+                    Bitmap preview = NoteThumbnailRenderer
+                            .renderPdfPreview(note.pdfPath);
+
+                    if (preview != null) {
+                        ThumbnailCache.save(
+                                h.itemView.getContext(),
+                                note.id,
+                                preview
+                        );
+
+                        h.itemView.post(() -> {
+                            h.imgPreview.setVisibility(View.VISIBLE);
+                            h.imgPreview.setImageBitmap(preview);
+                        });
+                    }
+                }).start();
+            }
+        }
+
+        // ================= CONTENT PREVIEW =================
         if (note.content == null || note.content.trim().isEmpty()) {
             h.txtContent.setText("");
         } else {
-            String preview = note.content.trim().replaceAll("\\n{2,}", "\n");
-            if (preview.length() > 150) {
-                preview = preview.substring(0, 150) + "...";
+            String previewText = note.content.trim().replaceAll("\\n{2,}", "\n");
+            if (previewText.length() > 150) {
+                previewText = previewText.substring(0, 150) + "...";
             }
-            h.txtContent.setText(preview);
+            h.txtContent.setText(previewText);
         }
 
-
-        // ===== EDIT MODE =====
+        // ================= EDIT MODE =================
         h.chkSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
         h.chkSelect.setChecked(note.selected);
         h.btnOptions.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
 
-        // CLICK CHECKBOX
-        h.chkSelect.setOnClickListener(v -> {
-            note.selected = h.chkSelect.isChecked();
-        });
+        h.chkSelect.setOnClickListener(v ->
+                note.selected = h.chkSelect.isChecked()
+        );
 
-        // ===== CLICK CARD (GIỮ ANIMATION CŨ) =====
+        // ==================================================
+        // ⭐ CLICK CARD
+        // ==================================================
         h.itemView.setOnClickListener(v -> {
             v.animate()
                     .scaleX(0.97f)
@@ -129,18 +150,37 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         if (isEditMode) {
                             note.selected = !note.selected;
                             h.chkSelect.setChecked(note.selected);
-                        } else {
-                            Context ctx = v.getContext();
-                            Intent i = new Intent(ctx, EditNoteActivity.class);
-                            i.putExtra("noteId", note.id);
-                            ctx.startActivity(i);
+                            return;
                         }
+
+                        Context ctx = v.getContext();
+
+                        // 🔥 PDF NOTE
+                        if ("pdf".equalsIgnoreCase(note.type)) {
+
+                            if (note.pdfPath == null || note.pdfPath.trim().isEmpty()) {
+                                Toast.makeText(ctx, "Không tìm thấy PDF", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            Intent i = new Intent(ctx, PdfEditorActivity.class);
+                            i.putExtra("noteId", note.id);
+                            i.putExtra("pdfPath", note.pdfPath);
+                            ctx.startActivity(i);
+                            return;
+                        }
+
+                        // 🔹 NORMAL NOTE
+                        Intent i = new Intent(ctx, EditNoteActivity.class);
+                        i.putExtra("noteId", note.id);
+                        ctx.startActivity(i);
                     });
         });
 
-        // ===== OPTIONS =====
+        // ================= OPTIONS =================
         h.btnOptions.setOnClickListener(v -> showNoteOptions(v, note));
     }
+
 
     // ================= POPUP OPTIONS =================
     private void showNoteOptions(View anchor, Note note) {
@@ -263,3 +303,4 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         return notes == null ? 0 : notes.size();
     }
 }
+

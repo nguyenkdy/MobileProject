@@ -58,4 +58,28 @@
             android:layout_height="wrap_content"/>
     </LinearLayout>
 
+    <!-- CREATE PDF -->
+    <LinearLayout
+        android:id="@+id/optCreatePdf"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:src="@drawable/ic_create_pdf"
+            android:layout_width="24dp"
+            android:layout_height="24dp"/>
+
+        <TextView
+            android:text="Tạo PDF"
+            android:textSize="16sp"
+            android:textColor="#1E1E1E"
+            android:layout_marginStart="12dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
 </LinearLayout>

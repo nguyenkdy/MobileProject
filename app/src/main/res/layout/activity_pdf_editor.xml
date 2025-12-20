@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:layout_marginTop="30dp">
+
+    <!-- ================= TOP BAR ================= -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="#FFFFFF"
+        android:elevation="4dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="30dp"
+            android:layout_height="20dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back"
+            android:scaleType="centerInside"/>
+
+        <TextView
+            android:id="@+id/txtTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="PDF"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="#1E1E1E"
+            android:layout_marginStart="8dp"/>
+
+        <!-- 🔒 READ ONLY BUTTON -->
+        <ImageButton
+            android:id="@+id/btnReadOnly"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_read_only"
+            android:src="@drawable/ic_read_only"
+            android:scaleType="centerInside"/>
+    </LinearLayout>
+
+
+    <!-- ================= PDF LIST ================= -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPdf"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never"
+        android:background="#FFFFFF"/>
+
+    <!-- ================= DRAW TOOLBAR ================= -->
+    <LinearLayout
+        android:id="@+id/drawToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="@drawable/bg_toolbar_rounded"
+        android:elevation="12dp">
+
+        <ImageButton
+            android:id="@+id/btnPen"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_pen"/>
+
+        <ImageButton
+            android:id="@+id/btnMarker"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_marker"/>
+
+        <ImageButton
+            android:id="@+id/btnEraser"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_eraser"/>
+
+        <ImageButton
+            android:id="@+id/btnUndo"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_undo"/>
+
+        <ImageButton
+            android:id="@+id/btnRedo"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_redo"/>
+
+        <ImageButton
+            android:id="@+id/btnColor"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_palette"/>
+    </LinearLayout>
+
+
+</LinearLayout>

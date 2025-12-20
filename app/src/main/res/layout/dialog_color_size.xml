@@ -1,0 +1,36 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- CHỌN MÀU -->
+    <LinearLayout
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <View style="@style/ColorDot" android:background="#000000"/>
+        <View style="@style/ColorDot" android:background="#FF0000"/>
+        <View style="@style/ColorDot" android:background="#2196F3"/>
+        <View style="@style/ColorDot" android:background="#4CAF50"/>
+        <View style="@style/ColorDot" android:background="#FFEB3B"/>
+    </LinearLayout>
+
+    <!-- SIZE -->
+    <TextView
+        android:id="@+id/txtSizeLabel"
+        android:text="Độ to nét vẽ"
+        android:layout_marginTop="12dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <SeekBar
+        android:id="@+id/seekSize"
+        android:max="40"
+        android:progress="6"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

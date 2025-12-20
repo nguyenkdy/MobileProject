@@ -18,6 +18,9 @@ public class DrawingView extends View {
     public enum Tool { PEN, MARKER, ERASER, LASER }
     private Tool currentTool = Tool.PEN;
     private int currentColor = Color.BLACK;
+    private float penStrokeWidth = 6f;
+    private float markerStrokeWidth = 20f;
+
 
 
     // ================= CALLBACK =================
@@ -103,7 +106,7 @@ public class DrawingView extends View {
 
         Paint p = createBasePaint();
         p.setColor(currentColor);
-        p.setStrokeWidth(6f);
+        p.setStrokeWidth(penStrokeWidth);
         p.setAlpha(255);
         p.setXfermode(null);
 
@@ -115,7 +118,7 @@ public class DrawingView extends View {
 
         Paint p = createBasePaint();
         p.setColor(currentColor);
-        p.setStrokeWidth(20f);
+        p.setStrokeWidth(markerStrokeWidth);
         p.setAlpha(120);
         p.setXfermode(null);
 
@@ -125,7 +128,7 @@ public class DrawingView extends View {
     public void setEraser() {
         currentTool = Tool.ERASER;
         Paint p = basePaint();
-        p.setStrokeWidth(30f);
+        p.setStrokeWidth(50f);
         p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         currentPaint = p;
     }
@@ -157,7 +160,14 @@ public class DrawingView extends View {
     // ================= TOUCH =================
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (getVisibility() != VISIBLE) return false;
+        // 🔒 READ ONLY → KHÔNG NHẬN TOUCH → CHO SCROLL
+        if (!isEnabled()) {
+            return false;
+        }
+
+        // ✏️ EDIT MODE → CHẶN SCROLL → VẼ
+        getParent().requestDisallowInterceptTouchEvent(true);
+//        if (getVisibility() != VISIBLE) return false;
 
         float x = event.getX();
         float y = event.getY();
@@ -352,6 +362,16 @@ public class DrawingView extends View {
         } else if (currentTool == Tool.MARKER) {
             setMarker();
         }
+    }
+
+    public void setPenStrokeWidth(float width) {
+        penStrokeWidth = Math.max(2f, Math.min(width, 12f));
+        if (currentTool == Tool.PEN) setPen();
+    }
+
+    public void setMarkerStrokeWidth(float width) {
+        markerStrokeWidth = Math.max(10f, Math.min(width, 40f));
+        if (currentTool == Tool.MARKER) setMarker();
     }
 
 

@@ -12,6 +12,8 @@ public class Note {
     public String folderId; // null = không thuộc folder
     public Timestamp createdAt;
     public Timestamp updatedAt;
+    public String type;      // "note" | "pdf"
+    public String pdfPath;   // ❗ RẤT QUAN TRỌNG
 
     public Note() {}
 }
