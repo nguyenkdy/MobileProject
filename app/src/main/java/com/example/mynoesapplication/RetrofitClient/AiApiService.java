@@ -25,6 +25,7 @@ public class AiApiService {
 
     public interface Api {
         // Use v1 and the generateText RPC for Gemini text generation
+        //@POST("v1/models/gemini-1.5-flash:generateContent")
         @POST("v1beta/models/gemini-2.5-flash:generateContent")
         Call<AiResponse> summarize(@Body AiRequest req);
     }
