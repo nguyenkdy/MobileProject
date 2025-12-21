@@ -1,7 +1,9 @@
-package com.example.mynoesapplication;
+ package com.example.mynoesapplication;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +16,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mynoesapplication.Folder;
+import com.example.mynoesapplication.FolderSharingActivity;
+import com.example.mynoesapplication.R;
+import com.example.mynoesapplication.ReadOnlyNotesActivity;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -64,27 +70,52 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
         Folder f = folders.get(position);
         Context ctx = h.itemView.getContext();
 
-        h.txtFolderName.setText(f.name);
+        boolean isOwned = uid != null && f.ownerId != null && f.ownerId.equals(uid);
+        if (f.ownerId == null) isOwned = true;
+        final boolean isSharedReadOnly = !isOwned;
+
+        // avoid adding the suffix twice: only append when not already present
+        String displayName = f.name == null ? "" : f.name;
+        if (isSharedReadOnly) {
+            if (!displayName.endsWith(" (Chia sẻ)")) {
+                displayName = displayName + " (Chia sẻ)";
+            }
+        }
+        h.txtFolderName.setText(displayName);
 
         // ===== EDIT MODE UI =====
-        h.chkSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
-        h.btnOption.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
+        h.chkSelect.setVisibility((isEditMode && !isSharedReadOnly) ? View.VISIBLE : View.GONE);
+        h.btnOption.setVisibility(isEditMode ? View.GONE : (isSharedReadOnly ? View.GONE : View.VISIBLE));
 
-        // ❗ tránh bug listener bị gọi lại
+        // manage checkbox only for owned folders
         h.chkSelect.setOnCheckedChangeListener(null);
-        h.chkSelect.setChecked(f.selected);
-        h.chkSelect.setOnCheckedChangeListener((b, checked) -> f.selected = checked);
+        if (!isSharedReadOnly) {
+            h.chkSelect.setChecked(f.selected);
+            h.chkSelect.setOnCheckedChangeListener((b, checked) -> f.selected = checked);
+        } else {
+            h.chkSelect.setChecked(false);
+        }
 
         // ===== CLICK ITEM =====
         h.itemView.setOnClickListener(v -> {
 
-            if (isEditMode) {
+            if (isEditMode && !isSharedReadOnly) {
                 f.selected = !f.selected;
                 h.chkSelect.setChecked(f.selected);
                 return;
             }
 
-            // 🔥 GIỮ ANIMATION CŨ
+            if (isSharedReadOnly) {
+                String ownerFolderId = (f.originalFolderId != null && !f.originalFolderId.isEmpty()) ? f.originalFolderId : f.id;
+                // pass a clean name (without duplicated suffix)
+                String cleanName = (f.name == null) ? "" : f.name;
+                if (cleanName.endsWith(" (Chia sẻ)")) {
+                    cleanName = cleanName.substring(0, cleanName.length() - " (Chia sẻ)".length()).trim();
+                }
+                openReadOnly(ctx, f.ownerId, ownerFolderId, cleanName);
+                return;
+            }
+
             v.animate()
                     .scaleX(0.97f)
                     .scaleY(0.97f)
@@ -109,6 +140,14 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
     // ==================================================
     private void showFolderPopup(View anchor, Folder folder) {
         Context ctx = anchor.getContext();
+
+        final boolean owned = (folder.ownerId == null) || (uid != null && folder.ownerId != null && folder.ownerId.equals(uid));
+        if (!owned) {
+            // Use originalFolderId for read-only access
+            String ownerFolderId = (folder.originalFolderId != null && !folder.originalFolderId.isEmpty()) ? folder.originalFolderId : folder.id;
+            openReadOnly(ctx, folder.ownerId, ownerFolderId, folder.name);
+            return;
+        }
 
         View popupView = LayoutInflater.from(ctx)
                 .inflate(R.layout.popup_folder_option, null);
@@ -136,8 +175,103 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
             popup.dismiss();
             moveFolderToTrash(ctx, folder);
         });
+
+        popupView.findViewById(R.id.optShareFolder).setOnClickListener(v -> {
+            popup.dismiss();
+            // Owner: create (or reuse) room code and open sharing view showing the room code.
+            createRoomForFolder(ctx, folder);
+        });
     }
 
+    // Helper: create room code if missing, save to Firestore, then open FolderSharingActivity with roomCode
+    private void createRoomForFolder(Context ctx, Folder folder) {
+        if (uid == null || folder == null || folder.id == null) {
+            android.widget.Toast.makeText(ctx, "Cannot create room: missing data", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // If folder already has a roomCode, ensure rooms collection exists and open
+        if (folder.roomCode != null && !folder.roomCode.trim().isEmpty()) {
+            // ensure rooms/{roomCode} exists (best-effort, no blocking)
+            java.util.Map<String, Object> roomDoc = new java.util.HashMap<>();
+            roomDoc.put("ownerUid", uid);
+            roomDoc.put("folderId", folder.id);
+            roomDoc.put("folderName", folder.name);
+            roomDoc.put("createdAt", com.google.firebase.Timestamp.now());
+
+            db.collection("rooms")
+                    .document(folder.roomCode)
+                    .set(roomDoc)
+                    .addOnFailureListener(e -> {
+                        android.widget.Toast.makeText(ctx, "Warning: failed to sync room metadata: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                    });
+
+            openFolderSharingActivity(ctx, uid, folder.id, folder.name, folder.roomCode, true);
+            return;
+        }
+
+        final String roomCode = generateRoomCode(6);
+
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("roomCode", roomCode);
+        if (folder.originalFolderId == null || folder.originalFolderId.isEmpty()) {
+            updates.put("originalFolderId", folder.id);
+        }
+
+        // 1) update folder document
+        db.collection("users")
+                .document(uid)
+                .collection("folders")
+                .document(folder.id)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    // update local model
+                    folder.roomCode = roomCode;
+
+                    // 2) write top-level rooms collection for fast lookup
+                    java.util.Map<String, Object> roomDoc = new java.util.HashMap<>();
+                    roomDoc.put("ownerUid", uid);
+                    roomDoc.put("folderId", folder.id);
+                    roomDoc.put("folderName", folder.name);
+                    roomDoc.put("createdAt", com.google.firebase.Timestamp.now());
+
+                    db.collection("rooms")
+                            .document(roomCode)
+                            .set(roomDoc)
+                            .addOnSuccessListener(v -> {
+                                openFolderSharingActivity(ctx, uid, folder.id, folder.name, roomCode, true);
+                            })
+                            .addOnFailureListener(e -> {
+                                // still open sharing view even if rooms write failed
+                                android.widget.Toast.makeText(ctx, "Room created but rooms index write failed: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                                openFolderSharingActivity(ctx, uid, folder.id, folder.name, roomCode, true);
+                            });
+                })
+                .addOnFailureListener(e -> android.widget.Toast.makeText(ctx, "Create room failed: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show());
+    }
+    private void openFolderSharingActivity(Context ctx, String ownerUid, String folderId, String folderName, String roomCode, boolean isOwner) {
+        Intent i = new Intent(ctx, FolderSharingActivity.class);
+        if (ownerUid != null) i.putExtra("ownerUid", ownerUid);
+        if (folderId != null) i.putExtra("folderId", folderId);
+        if (folderName != null) i.putExtra("folderName", folderName);
+        if (roomCode != null) i.putExtra("roomCode", roomCode);
+        i.putExtra("isOwner", isOwner);
+        if (!(ctx instanceof Activity)) {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        ctx.startActivity(i);
+    }
+
+    // simple alphanumeric room code
+    private String generateRoomCode(int length) {
+        final String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        java.util.Random rnd = new java.util.Random();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
     // ==================================================
     // RENAME
     // ==================================================
@@ -287,5 +421,17 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
             btnOption = v.findViewById(R.id.btnFolderOption);
             chkSelect = v.findViewById(R.id.chkSelectFolder);
         }
+    }
+
+    // ==================================================
+    // HELPERS
+    // ==================================================
+    private void openReadOnly(Context ctx, String ownerUid, String folderId, String folderName) {
+        Intent i = new Intent(ctx, ReadOnlyNotesActivity.class);
+        i.putExtra("ownerUid", ownerUid);
+        i.putExtra("folderId", folderId);
+        i.putExtra("folderName", folderName);
+        if (!(ctx instanceof Activity)) i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ctx.startActivity(i);
     }
 }

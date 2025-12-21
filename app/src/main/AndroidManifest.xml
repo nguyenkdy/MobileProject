@@ -26,6 +26,9 @@
         <activity android:name=".SignInActivity" />
         <activity android:name=".SignUpActivity" />
         <activity android:name=".NotesActivity"/>
+        <activity android:name=".FolderSharingActivity"/>
+        <activity
+            android:name=".ReadOnlyNotesActivity"/>
         <activity
             android:name=".EditNoteActivity"
             android:exported="false"/>

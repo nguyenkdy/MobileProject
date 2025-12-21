@@ -53,6 +53,29 @@
             android:layout_height="wrap_content"/>
     </LinearLayout>
 
+    <!-- SHARE -->
+    <LinearLayout
+        android:id="@+id/optShareFolder"
+        android:orientation="horizontal"
+        android:padding="10dp"
+        android:gravity="center_vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_share"/>
+
+        <TextView
+            android:text="Chia sẻ thư mục"
+            android:textSize="14sp"
+            android:textColor="#222"
+            android:layout_marginStart="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
     <!-- DELETE -->
     <LinearLayout
         android:id="@+id/optDeleteFolder"

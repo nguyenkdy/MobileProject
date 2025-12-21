@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/readonly_root"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Title shown at top (id used in activity) -->
+    <TextView
+        android:id="@+id/tvReadOnlyTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Shared folder"
+        android:textSize="20sp"
+        android:paddingBottom="8dp" />
+
+    <!-- RecyclerView for notes (id used in activity) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvReadOnlyNotes"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>
