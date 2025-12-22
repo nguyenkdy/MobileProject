@@ -345,8 +345,19 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                 .update(
                         "deleted", true,
                         "deletedAt", Timestamp.now()
+                )
+                .addOnSuccessListener(aVoid -> {
+                    // ✅ chỉ OWNER mới cleanup
+                    if (uid != null && (folder.ownerId == null || uid.equals(folder.ownerId))) {
+                        cleanupJoinedFolders(folder, uid);
+                    }
+                })
+                .addOnFailureListener(e ->
+                        android.util.Log.w("FoldersAdapter", "Delete folder failed: " + e.getMessage())
                 );
     }
+
+
 
     private void moveFolderAndNotes(Folder folder, QuerySnapshot notesSnapshot) {
         WriteBatch batch = db.batch();
@@ -367,8 +378,19 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                 "deletedAt", now
         );
 
-        batch.commit();
+        batch.commit()
+                .addOnSuccessListener(aVoid -> {
+                    // ✅ chỉ OWNER mới cleanup
+                    if (uid != null && (folder.ownerId == null || uid.equals(folder.ownerId))) {
+                        cleanupJoinedFolders(folder, uid);
+                    }
+                })
+                .addOnFailureListener(e ->
+                        android.util.Log.w("FoldersAdapter",
+                                "Failed to commit moveFolderAndNotes: " + e.getMessage())
+                );
     }
+
 
     // ==================================================
     // ===== EDIT MODE API (CHO NotesActivity) =====
@@ -434,4 +456,71 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
         if (!(ctx instanceof Activity)) i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         ctx.startActivity(i);
     }
+    // Forwarding overload that uses this adapter's uid
+    private void cleanupJoinedFolders(Folder folder) {
+        cleanupJoinedFolders(folder, folder.ownerId);
+    }
+    // Main cleanup implementation: delete rooms/{roomCode} and all users/*/joinedFolders entries
+    private void cleanupJoinedFolders(Folder folder, String ownerUid) {
+        if (folder == null || folder.roomCode == null || folder.roomCode.isEmpty()) return;
+
+        String roomCode = folder.roomCode;
+
+        // 1️⃣ XÓA TẤT CẢ joinedFolders/{roomCode}
+        db.collectionGroup("joinedFolders")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    WriteBatch batch = db.batch();
+
+                    for (DocumentSnapshot ds : snapshot.getDocuments()) {
+                        if (roomCode.equals(ds.getId())) {
+                            batch.delete(ds.getReference());
+                        }
+                    }
+
+                    batch.commit().addOnSuccessListener(v -> {
+                        // 2️⃣ SAU KHI joinedFolders đã xóa → xóa rooms
+                        db.collection("rooms")
+                                .document(roomCode)
+                                .delete();
+                    });
+                });
+    }
+
+
+    private void cleanupStaleJoinedFolders() {
+        if (uid == null) return;
+
+        db.collection("users")
+                .document(uid)
+                .collection("joinedFolders")
+                .get()
+                .addOnSuccessListener(joinedSnap -> {
+                    for (com.google.firebase.firestore.DocumentSnapshot jd : joinedSnap.getDocuments()) {
+                        final String roomCode = jd.getId();
+                        if (roomCode == null || roomCode.isEmpty()) continue;
+
+                        db.collection("rooms")
+                                .document(roomCode)
+                                .get()
+                                .addOnSuccessListener(roomDoc -> {
+                                    if (roomDoc == null || !roomDoc.exists()) {
+                                        // rooms/{roomCode} removed -> delete this user's joinedFolders entry
+                                        db.collection("users")
+                                                .document(uid)
+                                                .collection("joinedFolders")
+                                                .document(roomCode)
+                                                .delete()
+                                                .addOnFailureListener(e -> android.util.Log.w(
+                                                        "NotesActivity",
+                                                        "Failed to delete stale joinedFolders/" + roomCode + ": " + e.getMessage()
+                                                ));
+                                    }
+                                })
+                                .addOnFailureListener(e -> android.util.Log.w("NotesActivity", "Failed to check rooms/" + roomCode + ": " + e.getMessage()));
+                    }
+                })
+                .addOnFailureListener(e -> android.util.Log.w("NotesActivity", "Failed to load joinedFolders: " + e.getMessage()));
+    }
+
 }
