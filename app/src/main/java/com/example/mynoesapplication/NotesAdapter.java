@@ -16,14 +16,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
 
@@ -33,27 +37,40 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     private boolean isEditMode = false;
 
     public NotesAdapter(List<Note> notes) {
-        this.notes = notes;
+        this.notes = (notes != null) ? notes : new ArrayList<>();
         this.db = FirebaseFirestore.getInstance();
         this.uid = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid()
                 : null;
+
+        // Sort lần đầu cho đúng thứ tự (pinned trước)
+        sortNotesInPlace(this.notes);
     }
 
     // ================= VIEW HOLDER =================
     static class NoteViewHolder extends RecyclerView.ViewHolder {
-        TextView txtTitle, txtContent;
+        TextView txtTitle, txtContent, txtCreatedAt;
         ImageView imgPreview;
         ImageButton btnOptions;
         CheckBox chkSelect;
 
+        // ✅ PIN ICON
+        ImageView imgPin;
+        View layoutHeader; // ✅ thêm
+
         public NoteViewHolder(@NonNull View v) {
             super(v);
             txtTitle = v.findViewById(R.id.txtTitle);
+            txtCreatedAt = v.findViewById(R.id.txtCreatedAt);
             txtContent = v.findViewById(R.id.txtContent);
             btnOptions = v.findViewById(R.id.btnOptions);
             chkSelect = v.findViewById(R.id.chkSelect);
             imgPreview = v.findViewById(R.id.imgPreview);
+
+            // ✅ phải có trong item_note.xml
+            imgPin = v.findViewById(R.id.imgPin);
+            layoutHeader = v.findViewById(R.id.layoutHeader); // ✅ thêm
+
         }
     }
 
@@ -75,6 +92,21 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         ? "Không tiêu đề"
                         : note.title.trim()
         );
+
+        h.txtCreatedAt.setText(
+                "Đã tạo: " + formatDate(note.createdAt)
+        );
+
+        // ================= PIN ICON (HIỆN/ẨN) =================
+        // Trong edit mode thì ẩn option + ẩn pin để header gọn
+        if (note.isPinned) {
+            h.layoutHeader.setBackgroundResource(R.color.note_header_pinned);
+        } else {
+            h.layoutHeader.setBackgroundResource(R.color.note_header_normal);
+        }
+
+        boolean showPin = (note.isPinned);
+        h.imgPin.setVisibility(!isEditMode && showPin ? View.VISIBLE : View.GONE);
 
         // ================= PREVIEW IMAGE =================
         Bitmap thumb = ThumbnailCache.load(
@@ -105,6 +137,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         );
 
                         h.itemView.post(() -> {
+                            // check lại position hợp lệ
+                            int adapterPos = h.getBindingAdapterPosition();
+                            if (adapterPos == RecyclerView.NO_POSITION) return;
                             h.imgPreview.setVisibility(View.VISIBLE);
                             h.imgPreview.setImageBitmap(preview);
                         });
@@ -129,9 +164,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         h.chkSelect.setChecked(note.selected);
         h.btnOptions.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
 
-        h.chkSelect.setOnClickListener(v ->
-                note.selected = h.chkSelect.isChecked()
-        );
+        h.chkSelect.setOnClickListener(v -> note.selected = h.chkSelect.isChecked());
 
         // ==================================================
         // ⭐ CLICK CARD
@@ -181,7 +214,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         h.btnOptions.setOnClickListener(v -> showNoteOptions(v, note));
     }
 
-
     // ================= POPUP OPTIONS =================
     private void showNoteOptions(View anchor, Note note) {
         View popupView = LayoutInflater.from(anchor.getContext())
@@ -205,7 +237,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
         popupView.findViewById(R.id.optPin).setOnClickListener(v -> {
             popup.dismiss();
-            togglePin(note);
+            togglePinOptimistic(note); // ✅ pin + reorder + animation
         });
 
         popupView.findViewById(R.id.optDelete).setOnClickListener(v -> {
@@ -219,7 +251,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         if (uid == null || note.id == null) return;
 
         EditText edt = new EditText(ctx);
-        edt.setText(note.title);
+        edt.setText(note.title == null ? "" : note.title);
         edt.setSelection(edt.getText().length());
 
         new AlertDialog.Builder(ctx)
@@ -262,18 +294,123 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 .show();
     }
 
-    // ================= PIN =================
-    private void togglePin(Note note) {
+    // ================= PIN (OPTIMISTIC + ANIMATION) =================
+    private void togglePinOptimistic(Note note) {
         if (uid == null || note.id == null) return;
 
+        // 1) Snapshot cũ để DiffUtil animate mượt
+        List<Note> oldList = new ArrayList<>(notes);
+
+        // 2) Toggle local ngay lập tức (để UI phản hồi nhanh)
+        boolean newPinned = !note.isPinned;
+        note.isPinned = newPinned;
+
+        if (newPinned) {
+            // ghim mới nhất lên đầu
+            note.pinnedAt = System.currentTimeMillis();
+        } else {
+            note.pinnedAt = 0L;
+        }
+
+        // 3) Sort lại theo rule: pinned trước, pinnedAt desc
+        sortNotesInPlace(notes);
+
+        // 4) Dispatch update bằng DiffUtil để có animation di chuyển
+        dispatchDiff(oldList, notes);
+
+        // 5) Update Firestore (không ảnh hưởng logic khác)
         db.collection("users")
                 .document(uid)
                 .collection("notes")
                 .document(note.id)
                 .update(
-                        "isPinned", !note.isPinned,
+                        "isPinned", note.isPinned,
+                        "pinnedAt", note.pinnedAt,      // ✅ để sort theo “ghim mới nhất”
                         "updatedAt", Timestamp.now()
                 );
+    }
+
+    // ================= SORT RULE =================
+    // pinned trước; trong pinned: pinnedAt mới nhất lên đầu
+    private static void sortNotesInPlace(List<Note> list) {
+        Collections.sort(list, (a, b) -> {
+
+            boolean ap = a.isPinned;
+            boolean bp = b.isPinned;
+
+            // 1️⃣ Một ghim – một không
+            if (ap && !bp) return -1;
+            if (!ap && bp) return 1;
+
+            // 2️⃣ Cả hai đều ghim → pinnedAt mới nhất lên đầu
+            if (ap && bp) {
+                return Long.compare(b.pinnedAt, a.pinnedAt);
+            }
+
+            // 3️⃣ Cả hai KHÔNG ghim → updatedAt mới hơn lên trước
+            // (chỉ trong nhóm không ghim)
+            long au = a.updatedAt != null ? a.updatedAt.toDate().getTime() : 0;
+            long bu = b.updatedAt != null ? b.updatedAt.toDate().getTime() : 0;
+            return Long.compare(bu, au);
+        });
+    }
+
+
+    // ================= DIFFUTIL (ANIMATION) =================
+    private void dispatchDiff(List<Note> oldList, List<Note> newList) {
+        DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new NoteDiff(oldList, newList));
+        diff.dispatchUpdatesTo(this);
+    }
+
+    private static class NoteDiff extends DiffUtil.Callback {
+        private final List<Note> oldList;
+        private final List<Note> newList;
+
+        NoteDiff(List<Note> oldList, List<Note> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList == null ? 0 : oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList == null ? 0 : newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            Note o = oldList.get(oldItemPosition);
+            Note n = newList.get(newItemPosition);
+            if (o == null || n == null) return false;
+            if (o.id == null || n.id == null) return false;
+            return o.id.equals(n.id);
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            Note o = oldList.get(oldItemPosition);
+            Note n = newList.get(newItemPosition);
+            if (o == null || n == null) return false;
+
+            // so sánh những phần ảnh hưởng hiển thị + pin + selection
+            return safeEq(o.title, n.title)
+                    && safeEq(o.content, n.content)
+                    && safeEq(o.type, n.type)
+                    && safeEq(o.pdfPath, n.pdfPath)
+                    && o.isPinned == n.isPinned
+                    && o.pinnedAt == n.pinnedAt
+                    && o.selected == n.selected;
+        }
+
+        private boolean safeEq(String a, String b) {
+            if (a == null && b == null) return true;
+            if (a == null) return false;
+            return a.equals(b);
+        }
     }
 
     // ================= MULTI SELECT =================
@@ -302,5 +439,20 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     public int getItemCount() {
         return notes == null ? 0 : notes.size();
     }
-}
 
+    private String formatDate(Timestamp timestamp) {
+        SimpleDateFormat sdf =
+                new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+        return sdf.format(timestamp.toDate());
+    }
+
+    public void replaceAllNotes(List<Note> newNotes) {
+        List<Note> oldList = new ArrayList<>(notes);
+
+        notes.clear();
+        if (newNotes != null) notes.addAll(newNotes);
+
+        sortNotesInPlace(notes);
+        dispatchDiff(oldList, notes);
+    }
+}

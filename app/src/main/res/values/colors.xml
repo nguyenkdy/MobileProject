@@ -6,4 +6,8 @@
     <color name="blue_secondary">#1565C0</color>
     <color name="blue_secondary_container">#64B5F6</color>
 
+    <!-- res/values/colors.xml -->
+    <color name="note_header_normal">#84FFA9</color>   <!-- xanh nhạt -->
+    <color name="note_header_pinned">#FF9E80</color>   <!-- vàng nhạt -->
+
 </resources>

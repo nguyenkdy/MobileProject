@@ -4,42 +4,87 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="3dp"
+    android:layout_marginBottom="14dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
     android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="14dp">
+        android:orientation="vertical">
 
-        <!-- ===== CHECKBOX (EDIT MODE) ===== -->
-        <CheckBox
-            android:id="@+id/chkSelect"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"/>
-
-        <!-- ===== HEADER: TITLE + OPTIONS ===== -->
+        <!-- ================= HEADER (COLORED) ================= -->
         <RelativeLayout
+            android:id="@+id/layoutHeader"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:padding="14dp"
+            android:background="@color/note_header_normal">
+
+            <!-- CHECKBOX (EDIT MODE) -->
+            <CheckBox
+                android:id="@+id/chkSelect"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:visibility="gone"/>
+
+            <!-- ICON NOTE -->
+            <ImageView
+                android:id="@+id/imgNoteIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_toEndOf="@id/chkSelect"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_note_card"
+                android:scaleType="centerInside"
+                android:contentDescription="Note icon"/>
 
             <!-- TITLE -->
             <TextView
                 android:id="@+id/txtTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/imgNoteIcon"
+                android:layout_marginStart="8dp"
                 android:layout_marginEnd="36dp"
                 android:text="Ghi chú mới"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#1E1E1E"
+                android:textColor="#000000"
                 android:maxLines="1"
                 android:ellipsize="end"/>
+
+            <!-- CREATED TIME -->
+            <TextView
+                android:id="@+id/txtCreatedAt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/txtTitle"
+                android:layout_toEndOf="@id/imgNoteIcon"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="36dp"
+                android:text="Đã tạo: 20/12/2025 10:15"
+                android:textSize="12sp"
+                android:textColor="#888888"
+                android:maxLines="1"/>
+
+            <!-- PIN ICON -->
+            <ImageView
+                android:id="@+id/imgPin"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_toStartOf="@id/btnOptions"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="6dp"
+                android:src="@drawable/ic_pin_card"
+                android:scaleType="centerInside"
+                android:visibility="gone"
+                android:contentDescription="Pinned"/>
 
             <!-- OPTIONS -->
             <ImageButton
@@ -47,35 +92,41 @@
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:layout_alignParentEnd="true"
-                android:layout_alignParentTop="true"
+                android:layout_centerVertical="true"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_options_note"
                 android:scaleType="centerInside"
                 android:padding="4dp"/>
-
         </RelativeLayout>
 
-        <!-- ===== PREVIEW (TEXT + DRAWING) ===== -->
-        <ImageView
-            android:id="@+id/imgPreview"
-            android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:layout_marginTop="10dp"
-            android:scaleType="centerCrop"
-            android:background="@drawable/placeholder"
-            android:contentDescription="Note preview"/>
-
-        <!-- ===== TEXT FALLBACK (optional) ===== -->
-        <TextView
-            android:id="@+id/txtContent"
+        <!-- ================= CONTENT ================= -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Nội dung ghi chú..."
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:maxLines="2"
-            android:ellipsize="end"/>
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <!-- PREVIEW IMAGE -->
+            <ImageView
+                android:id="@+id/imgPreview"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
+                android:background="@drawable/placeholder"
+                android:contentDescription="Note preview"/>
+
+            <!-- TEXT PREVIEW -->
+            <TextView
+                android:id="@+id/txtContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Nội dung ghi chú..."
+                android:textSize="14sp"
+                android:textColor="#555555"
+                android:maxLines="2"
+                android:ellipsize="end"/>
+        </LinearLayout>
 
     </LinearLayout>
 

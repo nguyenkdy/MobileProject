@@ -6,6 +6,7 @@ public class Note {
     public String title;
     public String content;
     public boolean isPinned = false;
+    public long pinnedAt; // thời điểm ghim (quan trọng)
     public boolean deleted;
     public Timestamp deletedAt;
     public boolean selected = false;

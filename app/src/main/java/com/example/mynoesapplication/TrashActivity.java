@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,12 +26,13 @@ public class TrashActivity extends AppCompatActivity {
 
     // ================= UI =================
     ImageButton btnBack;
-    TextView btnTrashNotes, btnTrashFolders, txtEmpty;
+    TextView btnTrashNotes, btnTrashFolders;
 
-    // ⭐ bottom actions
-    TextView btnRestoreAll, btnEmptyTrash;
+    // ⭐ bottom actions (đúng với XML: LinearLayout)
+    LinearLayout btnRestoreAll, btnEmptyTrash;
 
     RecyclerView recyclerTrash;
+    LinearLayout layoutEmpty;
 
     // ================= Firebase =================
     FirebaseFirestore db;
@@ -57,10 +59,9 @@ public class TrashActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
         btnTrashNotes = findViewById(R.id.btnTrashNotes);
         btnTrashFolders = findViewById(R.id.btnTrashFolders);
-        txtEmpty = findViewById(R.id.txtEmpty);
+        layoutEmpty = findViewById(R.id.layoutEmpty);
         recyclerTrash = findViewById(R.id.recyclerTrash);
 
-        // ⭐ bottom bar
         btnRestoreAll = findViewById(R.id.btnRestoreAll);
         btnEmptyTrash = findViewById(R.id.btnEmptyTrash);
 
@@ -98,6 +99,10 @@ public class TrashActivity extends AppCompatActivity {
         updateTabUI();
         removeListener();
 
+        layoutEmpty.setVisibility(View.GONE);
+        recyclerTrash.setVisibility(View.VISIBLE);
+        setBottomActionsEnabled(false);
+
         if (mode == Mode.NOTES) {
             recyclerTrash.setAdapter(trashNoteAdapter);
             loadTrashNotes();
@@ -122,7 +127,6 @@ public class TrashActivity extends AppCompatActivity {
     private void loadTrashNotes() {
         trashNotes.clear();
         trashNoteAdapter.notifyDataSetChanged();
-        txtEmpty.setVisibility(View.GONE);
 
         trashListener = db.collection("users")
                 .document(uid)
@@ -154,7 +158,11 @@ public class TrashActivity extends AppCompatActivity {
                     });
 
                     trashNoteAdapter.notifyDataSetChanged();
-                    txtEmpty.setVisibility(trashNotes.isEmpty() ? View.VISIBLE : View.GONE);
+
+                    boolean empty = trashNotes.isEmpty();
+                    layoutEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+                    recyclerTrash.setVisibility(empty ? View.GONE : View.VISIBLE);
+                    setBottomActionsEnabled(!empty);
                 });
     }
 
@@ -164,7 +172,6 @@ public class TrashActivity extends AppCompatActivity {
     private void loadTrashFolders() {
         trashFolders.clear();
         trashFolderAdapter.notifyDataSetChanged();
-        txtEmpty.setVisibility(View.GONE);
 
         trashListener = db.collection("users")
                 .document(uid)
@@ -196,8 +203,31 @@ public class TrashActivity extends AppCompatActivity {
                     });
 
                     trashFolderAdapter.notifyDataSetChanged();
-                    txtEmpty.setVisibility(trashFolders.isEmpty() ? View.VISIBLE : View.GONE);
+
+                    boolean empty = trashFolders.isEmpty();
+                    layoutEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+                    recyclerTrash.setVisibility(empty ? View.GONE : View.VISIBLE);
+                    setBottomActionsEnabled(!empty);
                 });
+    }
+
+    // ==================================================
+    // BOTTOM ACTION ENABLE / DISABLE
+    // ==================================================
+    private void setBottomActionsEnabled(boolean enabled) {
+        btnRestoreAll.setEnabled(enabled);
+        btnEmptyTrash.setEnabled(enabled);
+
+        btnRestoreAll.setAlpha(enabled ? 1f : 0.4f);
+        btnEmptyTrash.setAlpha(enabled ? 1f : 0.4f);
+
+        // disable luôn view con để tránh click “lén”
+        for (int i = 0; i < btnRestoreAll.getChildCount(); i++) {
+            btnRestoreAll.getChildAt(i).setEnabled(enabled);
+        }
+        for (int i = 0; i < btnEmptyTrash.getChildCount(); i++) {
+            btnEmptyTrash.getChildAt(i).setEnabled(enabled);
+        }
     }
 
     // ==================================================
@@ -222,10 +252,8 @@ public class TrashActivity extends AppCompatActivity {
         if (currentMode == Mode.NOTES) {
             for (Note n : trashNotes) {
                 batch.update(
-                        db.collection("users")
-                                .document(uid)
-                                .collection("notes")
-                                .document(n.id),
+                        db.collection("users").document(uid)
+                                .collection("notes").document(n.id),
                         "deleted", false,
                         "deletedAt", null,
                         "updatedAt", now
@@ -234,10 +262,8 @@ public class TrashActivity extends AppCompatActivity {
         } else {
             for (Folder f : trashFolders) {
                 batch.update(
-                        db.collection("users")
-                                .document(uid)
-                                .collection("folders")
-                                .document(f.id),
+                        db.collection("users").document(uid)
+                                .collection("folders").document(f.id),
                         "deleted", false,
                         "deletedAt", null,
                         "updatedAt", now
@@ -266,19 +292,15 @@ public class TrashActivity extends AppCompatActivity {
         if (currentMode == Mode.NOTES) {
             for (Note n : trashNotes) {
                 batch.delete(
-                        db.collection("users")
-                                .document(uid)
-                                .collection("notes")
-                                .document(n.id)
+                        db.collection("users").document(uid)
+                                .collection("notes").document(n.id)
                 );
             }
         } else {
             for (Folder f : trashFolders) {
                 batch.delete(
-                        db.collection("users")
-                                .document(uid)
-                                .collection("folders")
-                                .document(f.id)
+                        db.collection("users").document(uid)
+                                .collection("folders").document(f.id)
                 );
             }
         }
@@ -306,5 +328,14 @@ public class TrashActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         removeListener();
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        overridePendingTransition(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+        );
     }
 }

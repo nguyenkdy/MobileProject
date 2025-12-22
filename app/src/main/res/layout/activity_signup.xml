@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -10,7 +12,7 @@
         android:src="@drawable/signup_bg"
         android:scaleType="centerCrop" />
 
-    <!-- OVERLAY LÀM MỜ NỀN -->
+    <!-- DARK OVERLAY -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -20,65 +22,119 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp"
-        android:gravity="center"
+        android:layout_centerInParent="true"
         android:orientation="vertical"
-        android:layout_centerInParent="true">
+        android:padding="24dp"
+        android:gravity="center">
 
+        <!-- TITLE -->
         <TextView
             android:id="@+id/txtTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Đăng kí"
-            android:textStyle="bold"
-            android:textSize="28sp"
+            android:text="Đăng ký"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="24dp"/>
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="28dp"/>
 
-        <EditText
-            android:id="@+id/edtEmailUp"
+        <!-- EMAIL -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutEmail"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:hint="Email"
-            android:padding="12dp"
-            android:background="@drawable/input_box"/>
+            app:boxBackgroundColor="#33FFFFFF"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:hintTextColor="#FFFFFF">
 
-        <EditText
-            android:id="@+id/edtPasswordUp"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtEmailUp"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#DDDDDD"
+                android:inputType="textEmailAddress"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- PASSWORD -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutPassword"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:padding="12dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:background="@drawable/input_box"/>
+            android:hint="Mật khẩu"
+            app:boxBackgroundColor="#33FFFFFF"
+            app:passwordToggleEnabled="true"
+            app:passwordToggleTint="#FFFFFF"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:hintTextColor="#FFFFFF">
 
-        <EditText
-            android:id="@+id/edtConfirm"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtPasswordUp"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:textColor="#FFFFFF"
+                android:inputType="textPassword"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- CONFIRM PASSWORD -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutConfirm"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="Confirm Password"
-            android:inputType="textPassword"
-            android:padding="12dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:background="@drawable/input_box"/>
+            android:hint="Xác nhận mật khẩu"
+            app:boxBackgroundColor="#33FFFFFF"
+            app:passwordToggleEnabled="true"
+            app:passwordToggleTint="#FFFFFF"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:hintTextColor="#FFFFFF">
 
-        <Button
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtConfirm"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:textColor="#FFFFFF"
+                android:inputType="textPassword"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- SIGN UP BUTTON -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSignUp"
             android:layout_width="match_parent"
-            android:layout_height="55dp"
-            android:text="Đăng kí"
+            android:layout_height="56dp"
+            android:text="Đăng ký"
+            android:textSize="18sp"
+            android:textStyle="bold"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#1E88E5"
-            android:layout_marginTop="28dp"/>
+            android:layout_marginTop="32dp"
 
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+
+            app:cornerRadius="28dp"
+            app:backgroundTint="?attr/colorPrimary"
+            app:rippleColor="?attr/colorOnPrimary"
+            app:elevation="12dp"/>
+
+        <!-- GO TO SIGN IN -->
         <TextView
             android:id="@+id/txtGoToSignIn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Đã có tài khoản? Đăng nhập"
-            android:textSize="16sp"
-            android:textColor="#FAFBFB"
+            android:text="Đã có tài khoản?  Đăng nhập"
+            android:textSize="15sp"
+            android:textColor="#BBDEFB"
             android:layout_marginTop="20dp"/>
 
     </LinearLayout>

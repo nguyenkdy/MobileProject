@@ -23,4 +23,9 @@
         <item name="android:background">@drawable/bg_color_circle</item>
     </style>
 
+    <style name="PopupSlideAnim">
+        <item name="android:windowEnterAnimation">@anim/popup_slide_in</item>
+        <item name="android:windowExitAnimation">@anim/popup_slide_out</item>
+    </style>
+
 </resources>

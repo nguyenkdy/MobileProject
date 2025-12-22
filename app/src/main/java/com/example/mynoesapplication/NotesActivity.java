@@ -4,10 +4,14 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,7 +54,7 @@ import java.util.Objects;
 public class NotesActivity extends AppCompatActivity {
 
     // ================= UI =================
-    ImageButton btnOption, btnSetting, btnAdd;
+    ImageButton btnOption, btnSetting, btnAdd, btnSearch;
     TextView txtFolderTitle;
     RecyclerView recyclerNotes;
 
@@ -70,9 +74,13 @@ public class NotesActivity extends AppCompatActivity {
     ListenerRegistration foldersListener;
 
     LinearLayout bottomActionBar;
+    LinearLayout layoutEmpty;
+
 
     // ✅ BƯỚC 5: 3 NÚT ACTION
-    TextView btnSelectAll, btnMove, btnDelete;
+    View btnSelectAll, btnMove, btnDelete;
+    TextView txtSelectAll;
+
 
     // ================= STATE =================
     private static final String ROOT = "ROOT";
@@ -84,6 +92,16 @@ public class NotesActivity extends AppCompatActivity {
 
     boolean isEditMode = false;
     private ActivityResultLauncher<Intent> pickPdfLauncher;
+
+    // ================= SEARCH =================
+    LinearLayout layoutSearch;
+    EditText edtSearch;
+    ImageButton btnClearSearch;
+
+    List<Note> fullNoteList = new ArrayList<>();
+    List<Folder> fullFolderList = new ArrayList<>();
+
+    boolean isSearchMode = false;
 
 
     @Override
@@ -145,6 +163,17 @@ public class NotesActivity extends AppCompatActivity {
         btnSelectAll = findViewById(R.id.btnSelectAll);
         btnMove = findViewById(R.id.btnMove);
         btnDelete = findViewById(R.id.btnDeleteAll);
+        txtSelectAll = btnSelectAll.findViewById(R.id.txtSelectAll);
+        layoutEmpty = findViewById(R.id.layoutEmpty);
+
+        layoutSearch = findViewById(R.id.layoutSearch);
+        edtSearch = findViewById(R.id.edtSearch);
+        btnClearSearch = findViewById(R.id.btnClearSearch);
+        btnSearch = findViewById(R.id.btnSearch);
+
+        btnSearch.setOnClickListener(v -> showSearchBar());
+        btnClearSearch.setOnClickListener(v -> hideSearchBar());
+
 
         if (btnSelectAll != null) btnSelectAll.setOnClickListener(v -> onSelectAllClicked());
         if (btnMove != null) btnMove.setOnClickListener(v -> onMoveClicked());
@@ -162,6 +191,22 @@ public class NotesActivity extends AppCompatActivity {
                     }
                 }
         );
+
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                if (currentMode == ScreenMode.NOTES) {
+                    filterNotesByTitle(s.toString());
+                } else if (currentMode == ScreenMode.FOLDERS) {
+                    filterFoldersByName(s.toString());
+                }
+            }
+
+            @Override public void afterTextChanged(Editable s) {}
+        });
 
     }
 
@@ -292,11 +337,46 @@ public class NotesActivity extends AppCompatActivity {
             }
         }
 
+        // ===== EMPTY STATE =====
+        boolean isEmpty = noteList.isEmpty()
+                && currentMode == ScreenMode.NOTES
+                && ROOT.equals(currentFolderId)
+                && !isEditMode;
+
+        if (layoutEmpty != null) {
+            layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        }
+
+        recyclerNotes.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+
         Collections.sort(noteList, (a, b) -> {
             if (a.updatedAt == null && b.updatedAt == null) return 0;
             if (a.updatedAt == null) return 1;
             if (b.updatedAt == null) return -1;
-            return b.updatedAt.compareTo(a.updatedAt);
+
+            // 1) pinned trước
+            boolean ap = a.isPinned;
+            boolean bp = b.isPinned;
+            if (ap && !bp) return -1;
+            if (!ap && bp) return 1;
+
+            // 2) trong nhóm pinned: pinnedAt mới nhất lên đầu
+            if (ap && bp) {
+                long at = a.pinnedAt; // nếu field chưa có thì bạn phải thêm (long pinnedAt = 0)
+                long bt = b.pinnedAt;
+                int cmp = Long.compare(bt, at);
+                if (cmp != 0) return cmp;
+
+                // fallback nếu pinnedAt bằng nhau -> updatedAt
+                long au = (a.updatedAt != null) ? a.updatedAt.toDate().getTime() : 0L;
+                long bu = (b.updatedAt != null) ? b.updatedAt.toDate().getTime() : 0L;
+                return Long.compare(bu, au);
+            }
+
+            // 3) nhóm không pinned: updatedAt mới nhất lên đầu
+            long au = (a.updatedAt != null) ? a.updatedAt.toDate().getTime() : 0L;
+            long bu = (b.updatedAt != null) ? b.updatedAt.toDate().getTime() : 0L;
+            return Long.compare(bu, au);
         });
 
         notesAdapter.notifyDataSetChanged();
@@ -415,27 +495,53 @@ public class NotesActivity extends AppCompatActivity {
     // OPTION MENU
     // ==================================================
     private void showOptionMenu() {
-        BottomSheetDialog dialog = new BottomSheetDialog(this);
-        var view = getLayoutInflater().inflate(R.layout.bottom_sheet_options, null);
 
+        View view = getLayoutInflater()
+                .inflate(R.layout.popup_main_option, null);
+
+        PopupWindow popup = new PopupWindow(
+                view,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        popup.setOutsideTouchable(true);
+        popup.setElevation(12f);
+        popup.setAnimationStyle(R.style.PopupSlideAnim);
+
+        // vị trí: bên trái nút option, trượt sang phải
+        int[] loc = new int[2];
+        btnOption.getLocationOnScreen(loc);
+
+        popup.showAtLocation(
+                btnOption,
+                Gravity.NO_GRAVITY,
+                loc[0],
+                loc[1] + btnOption.getHeight()
+        );
+
+        // ===== CLICK EVENTS =====
         view.findViewById(R.id.optAllNotes).setOnClickListener(v -> {
-            dialog.dismiss();
+            popup.dismiss();
             loadAllNotes();
         });
 
         view.findViewById(R.id.optFolders).setOnClickListener(v -> {
-            dialog.dismiss();
+            popup.dismiss();
             loadFolders();
         });
 
         view.findViewById(R.id.optTrash).setOnClickListener(v -> {
-            dialog.dismiss();
+            popup.dismiss();
             startActivity(new Intent(this, TrashActivity.class));
+            overridePendingTransition(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left
+            );
         });
-
-        dialog.setContentView(view);
-        dialog.show();
     }
+
 
     private void showSettingMenu() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
@@ -516,7 +622,7 @@ public class NotesActivity extends AppCompatActivity {
 
             if (!isEditMode) {
                 notesAdapter.clearSelection();
-                if (btnSelectAll != null) btnSelectAll.setText("Chọn tất cả");
+                if (btnSelectAll != null) txtSelectAll.setText("Chọn tất cả");
             }
 
             updateBottomActionBar();
@@ -530,7 +636,7 @@ public class NotesActivity extends AppCompatActivity {
 
             if (!isEditMode) {
                 foldersAdapter.clearSelection();
-                if (btnSelectAll != null) btnSelectAll.setText("Chọn tất cả");
+                if (btnSelectAll != null) txtSelectAll.setText("Chọn tất cả");
             }
 
             updateBottomActionBar();
@@ -539,33 +645,54 @@ public class NotesActivity extends AppCompatActivity {
 
 
     private void updateBottomActionBar() {
+
+        if (bottomActionBar == null) return;
+
+        // ================= EXIT EDIT MODE =================
         if (!isEditMode) {
-            bottomActionBar.setVisibility(View.GONE);
+
+            if (bottomActionBar.getVisibility() == View.VISIBLE) {
+                bottomActionBar.animate()
+                        .translationY(bottomActionBar.getHeight())
+                        .setDuration(180)
+                        .withEndAction(() -> bottomActionBar.setVisibility(View.GONE))
+                        .start();
+            }
             return;
         }
 
-        bottomActionBar.setVisibility(View.VISIBLE);
+        // ================= ENTER EDIT MODE =================
+        if (bottomActionBar.getVisibility() != View.VISIBLE) {
+            bottomActionBar.setVisibility(View.VISIBLE);
+            bottomActionBar.setTranslationY(bottomActionBar.getHeight());
+            bottomActionBar.animate()
+                    .translationY(0)
+                    .setDuration(220)
+                    .start();
+        }
+
+        // ================= BUTTON VISIBILITY =================
+        if (btnSelectAll != null) btnSelectAll.setVisibility(View.VISIBLE);
 
         if (currentMode == ScreenMode.NOTES) {
-            // NOTE: hiện đủ 3 nút
-            btnSelectAll.setVisibility(View.VISIBLE);
-            btnMove.setVisibility(View.VISIBLE);
-            btnDelete.setVisibility(View.VISIBLE);
+
+            // NOTES: đủ 3 nút
+            if (btnMove != null) btnMove.setVisibility(View.VISIBLE);
+            if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
 
         } else if (currentMode == ScreenMode.FOLDERS) {
-            // FOLDER: chỉ chọn tất cả + xóa
-            btnSelectAll.setVisibility(View.VISIBLE);
-            btnMove.setVisibility(View.GONE);
-            btnDelete.setVisibility(View.VISIBLE);
+
+            // FOLDERS: không cho move
+            if (btnMove != null) btnMove.setVisibility(View.GONE);
+            if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
         }
     }
-
 
     private void exitEditMode() {
         isEditMode = false;
         notesAdapter.setEditMode(false);
         notesAdapter.clearSelection();
-        if (btnSelectAll != null) btnSelectAll.setText("Chọn tất cả");
+        if (btnSelectAll != null) txtSelectAll.setText("Chọn tất cả");
         updateBottomActionBar();
     }
 
@@ -584,7 +711,7 @@ public class NotesActivity extends AppCompatActivity {
             notesAdapter.selectAll(selectAll);
 
             if (btnSelectAll != null) {
-                btnSelectAll.setText(selectAll ? "Bỏ chọn" : "Chọn tất cả");
+                txtSelectAll.setText(selectAll ? "Bỏ chọn" : "Chọn tất cả");
             }
             return;
         }
@@ -598,7 +725,7 @@ public class NotesActivity extends AppCompatActivity {
             foldersAdapter.selectAll(selectAll);
 
             if (btnSelectAll != null) {
-                btnSelectAll.setText(selectAll ? "Bỏ chọn" : "Chọn tất cả");
+                txtSelectAll.setText(selectAll ? "Bỏ chọn" : "Chọn tất cả");
             }
         }
     }
@@ -892,6 +1019,119 @@ public class NotesActivity extends AppCompatActivity {
         i.putExtra("noteId", noteId);
         i.putExtra("pdfPath", path);
         startActivity(i);
+    }
+
+    private void showSearchBar() {
+        if (isEditMode) return;
+        if (isSearchMode) return;
+
+        isSearchMode = true;
+
+        layoutSearch.setVisibility(View.VISIBLE);
+        layoutSearch.setTranslationY(-layoutSearch.getHeight());
+        layoutSearch.setAlpha(0f);
+
+        layoutSearch.animate()
+                .translationY(0)
+                .alpha(1f)
+                .setDuration(220)
+                .start();
+
+        // đẩy recycler xuống (đã làm)
+        recyclerNotes.setTranslationY(-layoutSearch.getHeight());
+        recyclerNotes.animate()
+                .translationY(0)
+                .setDuration(220)
+                .start();
+
+        edtSearch.requestFocus();
+        showKeyboard(edtSearch);
+
+        // ===== BACKUP DATA =====
+        if (currentMode == ScreenMode.NOTES) {
+            fullNoteList.clear();
+            fullNoteList.addAll(noteList);
+        } else if (currentMode == ScreenMode.FOLDERS) {
+            fullFolderList.clear();
+            fullFolderList.addAll(folderList);
+        }
+    }
+
+    private void hideSearchBar() {
+        if (!isSearchMode) return;
+
+        isSearchMode = false;
+
+        recyclerNotes.animate()
+                .translationY(-layoutSearch.getHeight())
+                .setDuration(180)
+                .start();
+
+        layoutSearch.animate()
+                .translationY(-layoutSearch.getHeight())
+                .alpha(0f)
+                .setDuration(180)
+                .withEndAction(() -> {
+                    layoutSearch.setVisibility(View.GONE);
+                    edtSearch.setText("");
+                    recyclerNotes.setTranslationY(0);
+                })
+                .start();
+
+        // ===== RESTORE DATA =====
+        if (currentMode == ScreenMode.NOTES) {
+            noteList.clear();
+            noteList.addAll(fullNoteList);
+            notesAdapter.notifyDataSetChanged();
+        } else if (currentMode == ScreenMode.FOLDERS) {
+            folderList.clear();
+            folderList.addAll(fullFolderList);
+            foldersAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void filterNotesByTitle(String keyword) {
+        noteList.clear();
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            noteList.addAll(fullNoteList);
+        } else {
+            String lower = keyword.toLowerCase();
+            for (Note n : fullNoteList) {
+                if (n.title != null && n.title.toLowerCase().contains(lower)) {
+                    noteList.add(n);
+                }
+            }
+        }
+
+        notesAdapter.notifyDataSetChanged();
+    }
+    private void showKeyboard(View view) {
+        view.post(() -> {
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager)
+                            getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(view, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+    }
+
+    private void filterFoldersByName(String keyword) {
+        folderList.clear();
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            folderList.addAll(fullFolderList);
+        } else {
+            String lower = keyword.toLowerCase();
+            for (Folder f : fullFolderList) {
+                if (f.name != null && f.name.toLowerCase().contains(lower)) {
+                    folderList.add(f);
+                }
+            }
+        }
+
+        foldersAdapter.notifyDataSetChanged();
     }
 
 

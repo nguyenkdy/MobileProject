@@ -22,8 +22,7 @@
             android:id="@+id/btnOption"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:background="@android:color/transparent"
-            android:src="@drawable/ic_option"
+            android:background="@drawable/ripple_click"            android:src="@drawable/ic_option"
             android:scaleType="centerInside"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -47,12 +46,25 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
 
+        <!-- SEARCH -->
+        <ImageButton
+            android:id="@+id/btnSearch"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/ripple_click"
+            android:src="@drawable/ic_search"
+            android:scaleType="centerInside"
+            app:layout_constraintEnd_toStartOf="@id/btnEdit"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="12dp"/>
+
         <!-- EDIT -->
         <ImageButton
             android:id="@+id/btnEdit"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:background="@android:color/transparent"
+            android:background="@drawable/ripple_click"
             android:src="@drawable/ic_edit"
             android:scaleType="centerInside"
             app:layout_constraintEnd_toStartOf="@id/btnSetting"
@@ -65,8 +77,7 @@
             android:id="@+id/btnSetting"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:background="@android:color/transparent"
-            android:src="@drawable/ic_setting"
+            android:background="@drawable/ripple_click"            android:src="@drawable/ic_setting"
             app:tint="#1E1E1E"
             android:scaleType="centerInside"
             app:layout_constraintEnd_toEndOf="parent"
@@ -75,6 +86,103 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- ================= BACKGROUND IMAGE ================= -->
+    <ImageView
+        android:id="@+id/imgBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:src="@drawable/bg_notes"
+        android:scaleType="centerCrop"
+        android:alpha="0.75"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- ================= EMPTY STATE ================= -->
+    <LinearLayout
+        android:id="@+id/layoutEmpty"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="20dp"
+        android:background="@drawable/bg_empty_state"
+        android:elevation="6dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="32dp">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_note_card"
+            android:alpha="0.9"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Chưa có ghi chú nào"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="#1E1E1E"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Nhấn nút + để tạo ghi chú đầu tiên"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:gravity="center"/>
+
+    </LinearLayout>
+
+    <!-- ================= SEARCH BAR ================= -->
+    <LinearLayout
+        android:id="@+id/layoutSearch"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="@drawable/bg_search_bar"
+        android:elevation="6dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_search"/>
+
+        <EditText
+            android:id="@+id/edtSearch"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:hint="Tìm kiếm ghi chú"
+            android:textSize="14sp"
+            android:background="@null"
+            android:singleLine="true"
+            android:imeOptions="actionSearch"/>
+
+        <ImageButton
+            android:id="@+id/btnClearSearch"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_close"
+            android:scaleType="centerInside"/>
+    </LinearLayout>
+
     <!-- ================= RECYCLER VIEW ================= -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerNotes"
@@ -82,68 +190,103 @@
         android:layout_height="0dp"
         android:padding="12dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintTop_toBottomOf="@id/layoutSearch"
         app:layout_constraintBottom_toTopOf="@id/bottomActionBar"/>
 
-    <!-- ================= BOTTOM ACTION BAR ================= -->
+    <!-- ================= BOTTOM ACTION BAR (FIXED) ================= -->
     <LinearLayout
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
         android:orientation="horizontal"
-        android:background="#FFFFFF"
-        android:elevation="10dp"
+        android:padding="10dp"
+        android:background="@drawable/bg_edit_action_bar"
+        android:elevation="12dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- CHỌN TẤT CẢ -->
-        <TextView
+        <!-- ===== SELECT ALL ===== -->
+        <LinearLayout
             android:id="@+id/btnSelectAll"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Chọn tất cả"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:foreground="?attr/selectableItemBackground"/>
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-        <!-- DIVIDER -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="#E0E0E0"/>
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_check_all"/>
 
-        <!-- DI CHUYỂN -->
-        <TextView
+            <TextView
+                android:id="@+id/txtSelectAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Chọn"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#1E1E1E"/>
+        </LinearLayout>
+
+        <!-- ===== MOVE ===== -->
+        <LinearLayout
             android:id="@+id/btnMove"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Di chuyển"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:foreground="?attr/selectableItemBackground"/>
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-        <!-- DIVIDER -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="#E0E0E0"/>
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_move"/>
 
-        <!-- XÓA -->
-        <TextView
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Di chuyển"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#1E1E1E"/>
+        </LinearLayout>
+
+        <!-- ===== DELETE ===== -->
+        <LinearLayout
             android:id="@+id/btnDeleteAll"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Xóa"
-            android:textColor="#D32F2F"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:foreground="?attr/selectableItemBackground"/>
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_delete"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Xóa"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#D32F2F"/>
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -153,7 +296,7 @@
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:layout_margin="20dp"
-        android:background="@android:color/transparent"
+        android:background="@drawable/ripple_click"
         android:src="@drawable/ic_add"
         android:scaleType="centerInside"
         app:layout_constraintBottom_toBottomOf="parent"

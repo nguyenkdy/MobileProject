@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- BACKGROUND IMAGE -->
     <ImageView
@@ -44,7 +45,7 @@
             android:id="@+id/txtTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="MyNotes App"
+            android:text="My Notes App"
             android:textColor="#FFFFFF"
             android:textSize="32sp"
             android:textStyle="bold"
@@ -61,26 +62,27 @@
             android:layout_marginTop="6dp" />
 
         <!-- SIGN IN BUTTON -->
-        <Button
-            android:id="@+id/btnSignIn"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStart"
             android:layout_width="300dp"
-            android:layout_height="55dp"
-            android:text="Sign In"
-            android:textColor="#FFFFFF"
+            android:layout_height="56dp"
+            android:text="Bắt đầu"
             android:textSize="18sp"
-            android:background="@drawable/btn_blue"
-            android:layout_marginTop="40dp" />
+            android:textStyle="bold"
+            android:layout_marginTop="48dp"
 
-        <!-- SIGN UP BUTTON -->
-        <Button
-            android:id="@+id/btnSignUp"
-            android:layout_width="300dp"
-            android:layout_height="55dp"
-            android:text="Sign Up"
-            android:textColor="#1E88E5"
-            android:textSize="18sp"
-            android:background="@drawable/btn_white_border"
-            android:layout_marginTop="16dp" />
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+
+            app:cornerRadius="28dp"
+            app:backgroundTint="?attr/colorPrimary"
+            app:rippleColor="?attr/colorOnPrimary"
+
+            app:strokeWidth="2dp"
+            app:strokeColor="@android:color/white"
+
+            app:elevation="12dp" />
+
 
     </LinearLayout>
 

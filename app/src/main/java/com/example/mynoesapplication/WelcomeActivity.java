@@ -14,43 +14,44 @@ public class WelcomeActivity extends AppCompatActivity {
 
     ImageView imgLogo;
     LinearLayout container;
-    Button btnSignIn, btnSignUp;
+    Button btnStart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
+        // ===== FIND VIEW =====
         imgLogo = findViewById(R.id.imgLogo);
         container = findViewById(R.id.container);
-        btnSignIn = findViewById(R.id.btnSignIn);
-        btnSignUp = findViewById(R.id.btnSignUp);
+        btnStart = findViewById(R.id.btnStart);
 
+        // ===== LOAD ANIMATIONS =====
         Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
         Animation slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         Animation clickAnim = AnimationUtils.loadAnimation(this, R.anim.button_click);
 
+        // ===== START ANIMATION =====
         imgLogo.startAnimation(fadeIn);
         container.startAnimation(slideUp);
 
-        // CLICK SIGN IN
-        btnSignIn.setOnClickListener(v -> {
+        // ===== CLICK "BẮT ĐẦU" =====
+        btnStart.setOnClickListener(v -> {
             v.startAnimation(clickAnim);
 
-            // Delay nhỏ để animation click hiển thị rõ rồi mới chuyển trang
+            // Delay để animation click chạy xong
             v.postDelayed(() -> {
-                startActivity(new Intent(WelcomeActivity.this, SignInActivity.class));
-                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
-            }, 180); // bằng duration của button_click
-        });
+                Intent intent = new Intent(WelcomeActivity.this, SignInActivity.class);
+                startActivity(intent);
 
-        // CLICK SIGN UP
-        btnSignUp.setOnClickListener(v -> {
-            v.startAnimation(clickAnim);
+                // Animation chuyển màn
+                overridePendingTransition(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left
+                );
 
-            v.postDelayed(() -> {
-                startActivity(new Intent(WelcomeActivity.this, SignUpActivity.class));
-                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+                // Không quay lại Welcome khi back
+                finish();
             }, 180);
         });
     }
