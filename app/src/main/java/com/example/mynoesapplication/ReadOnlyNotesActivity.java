@@ -1,6 +1,8 @@
 package com.example.mynoesapplication;
 
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +29,7 @@ public class ReadOnlyNotesActivity extends AppCompatActivity {
     private ListenerRegistration listener;
     private final List<Note> notes = new ArrayList<>();
     private ReadOnlyNotesAdapter adapter;
+    private ImageButton back;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -35,7 +38,8 @@ public class ReadOnlyNotesActivity extends AppCompatActivity {
 
         tvTitle = findViewById(R.id.tvReadOnlyTitle);
         rv = findViewById(R.id.rvReadOnlyNotes);
-
+        back = findViewById(R.id.btnBack);
+        back.setOnClickListener(v -> finish());
         db = FirebaseFirestore.getInstance();
 
         String ownerUid = getIntent().getStringExtra("ownerUid");
