@@ -90,6 +90,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     @NonNull
     @Override
     public NoteViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_note, parent, false);
         return new NoteViewHolder(v);
@@ -441,6 +442,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
     // ================= SUMMARY =================
 
+    // java
     private void handleOptSummary(View anchor, Note note) {
         Context ctx = anchor.getContext();
         if (!(ctx instanceof FragmentActivity)) {
@@ -448,68 +450,130 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             return;
         }
 
-        // 1) Extract text data only (title + content)
         String title = note.title == null ? "" : note.title.trim();
         String content = note.content == null ? "" : note.content.trim();
 
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("Summarize the following note in 2-10 concise sentences or rows.\n\n");
-        if (!title.isEmpty()) {
-            prompt.append("Title: ").append(title).append("\n\n");
-        }
-        if (!content.isEmpty()) {
-            prompt.append("Content:\n").append(content).append("\n\n");
-        }
-        prompt.append("Return a short, clear summary and in Vietnamese.");
+        StringBuilder basePrompt = new StringBuilder();
+        basePrompt.append("Summarize the following note in 2-10 concise sentences or rows.\n\n");
+        if (!title.isEmpty()) basePrompt.append("Title: ").append(title).append("\n\n");
+        if (!content.isEmpty()) basePrompt.append("Content:\n").append(content).append("\n\n");
+        basePrompt.append("Return a short, clear summary and in Vietnamese.");
 
-        // 2) Show right-side fragment (or overlay) and display loading
         FragmentActivity activity = (FragmentActivity) ctx;
         NoteSummaryFragment frag = NoteSummaryFragment.findOrCreate(activity.getSupportFragmentManager());
         frag.showLoading();
 
-        // 3) Call AI service (Retrofit) - text only
-        AiRequest req = new AiRequest(prompt.toString());
-        AiApiService.getApi().summarize(req)
-                .enqueue(new Callback<AiResponse>() {
+        if ("pdf".equalsIgnoreCase(note.type) && note.pdfPath != null && !note.pdfPath.trim().isEmpty()) {
+            final String pdfPath = note.pdfPath;
+            try { PdfSummarizer.init(activity.getApplicationContext()); } catch (Throwable ignored) {}
+
+            new Thread(() -> {
+                String extracted = null;
+                try {
+                    // extract raw text only (images ignored by PdfSummarizer.extractText)
+                    extracted = PdfSummarizer.extractText(pdfPath);
+                } catch (Throwable t) {
+                    Log.e("NotesAdapter", "extractText threw", t);
+                    extracted = null;
+                }
+
+                if (extracted == null || extracted.trim().isEmpty()) {
+                    activity.runOnUiThread(() -> {
+                        if (frag.isAdded()) frag.showSummary("Không thể đọc nội dung PDF. Vui lòng thử upload hoặc dùng OCR.");
+                    });
+                    return;
+                }
+
+                // trim large text to reasonable size for API
+                final int MAX_PDF_TEXT = 30000;
+                String trimmed = extracted.length() > MAX_PDF_TEXT ? extracted.substring(0, MAX_PDF_TEXT) + "\n\n[Truncated]" : extracted;
+
+                String prompt = basePrompt.toString() + "\n\nPDF Text:\n" + trimmed + "\n\nReturn a short, clear summary and in Vietnamese.";
+
+                AiRequest req = new AiRequest(prompt);
+                AiApiService.getApi().summarize(req).enqueue(new Callback<AiResponse>() {
                     @Override
                     public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
-
                         Log.d("AI_API", "HTTP code = " + response.code());
-
-                        if (response.isSuccessful()
-                                && response.body() != null
-                                && response.body().getSummary() != null) {
-
-                            frag.showSummary(response.body().getSummary());
-
-                        } else {
-                            String msg = "AI error";
-                            try {
-                                if (response.errorBody() != null) {
-                                    msg = response.errorBody().string();
-                                    Log.e("AI_API", "Error body: " + msg);
-                                } else {
-                                    Log.e("AI_API", "Error body is null");
-                                }
-                            } catch (Exception e) {
-                                Log.e("AI_API", "Read errorBody failed", e);
+                        activity.runOnUiThread(() -> {
+                            if (!frag.isAdded()) return;
+                            if (response.isSuccessful() && response.body() != null && response.body().getSummary() != null) {
+                                frag.showSummary(response.body().getSummary());
+                            } else {
+                                String msg = "AI error";
+                                try { if (response.errorBody() != null) msg = response.errorBody().string(); } catch (Exception ignored) {}
+                                frag.showSummary("Failed to summarize: " + msg);
                             }
-
-                            frag.showSummary("Failed to summarize: " + msg);
-                        }
+                        });
                     }
 
                     @Override
                     public void onFailure(Call<AiResponse> call, Throwable t) {
                         Log.e("AI_API", "Call failed", t);
-                        frag.showSummary("AI call failed: " + t.getMessage());
+                        activity.runOnUiThread(() -> {
+                            if (frag.isAdded()) frag.showSummary("AI call failed: " + t.getMessage());
+                        });
                     }
                 });
+            }).start();
 
+            return;
+        }
+
+        AiRequest req = new AiRequest(basePrompt.toString());
+        AiApiService.getApi().summarize(req)
+                .enqueue(new Callback<AiResponse>() {
+                    @Override
+                    public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
+                        Log.d("AI_API", "HTTP code = " + response.code());
+                        activity.runOnUiThread(() -> {
+                            if (!frag.isAdded()) return;
+                            if (response.isSuccessful() && response.body() != null && response.body().getSummary() != null) {
+                                frag.showSummary(response.body().getSummary());
+                            } else {
+                                String msg = "AI error";
+                                try { if (response.errorBody() != null) msg = response.errorBody().string(); } catch (Exception ignored) {}
+                                frag.showSummary("Failed to summarize: " + msg);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Call<AiResponse> call, Throwable t) {
+                        Log.e("AI_API", "Call failed", t);
+                        activity.runOnUiThread(() -> {
+                            if (frag.isAdded()) frag.showSummary("AI call failed: " + t.getMessage());
+                        });
+                    }
+                });
     }
+    // helper inside NotesAdapter (same file)
+    private boolean isBoilerplate(String extracted, String localSummary) {
+        if (extracted == null) return true;
+        String low = extracted.toLowerCase();
+        String sLow = (localSummary == null) ? "" : localSummary.toLowerCase();
 
+        String[] keywords = new String[] {
+                "smallpdf",
+                "welcome to smallpdf",
+                "powered by smallpdf",
+                "smallpdf.com",
+                "digital documents",
+                "access files anytime",
+                "enhance documents",
+                "collaborate with others"
+        };
 
-    // ================= MULTI SELECT =================
+        for (String k : keywords) {
+            if (low.contains(k) || sLow.contains(k)) return true;
+        }
+
+        // also treat very short extracted content or when local summary length equals a tiny header
+        if (extracted.trim().length() < 100) return true;
+        if (localSummary != null && localSummary.trim().length() < 30 && localSummary.contains("...")) return true;
+
+        return false;
+    }    // ================= MULTI SELECT =================
     public void setEditMode(boolean editMode) {
         this.isEditMode = editMode;
         notifyDataSetChanged();
