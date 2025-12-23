@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <!-- ================= TOP BAR ================= -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@drawable/bg_popup_note"
+        android:elevation="6dp"
+        android:paddingHorizontal="12dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- OPTION -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back"
+            app:tint="#1E1E1E"
+            android:scaleType="centerInside"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- TITLE -->
+        <TextView
+            android:id="@+id/tvReadOnlyTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Tất cả ghi chú"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#1E1E1E"
+            android:gravity="center_vertical"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginHorizontal="12dp"
+            app:layout_constraintStart_toEndOf="@id/btnBack"
+            app:layout_constraintEnd_toStartOf="@id/btnSetting"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- SETTING -->
+        <ImageButton
+            android:id="@+id/btnSetting"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_setting"
+            app:tint="#1E1E1E"
+            android:scaleType="centerInside"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ================= RECYCLER VIEW ================= -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvReadOnlyNotes"
+        android:layout_width="match_parent"
+        android:background="@drawable/bg_popup_note"
+        android:layout_height="0dp"
+        android:padding="12dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"/>
+
+    <!-- ================= BOTTOM ACTION BAR ================= -->
+    <LinearLayout
+        android:id="@+id/bottomActionBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="#FFFFFF"
+        android:elevation="10dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/btnSelectAll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Chọn tất cả"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:foreground="?attr/selectableItemBackground"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#E0E0E0"/>
+
+        <TextView
+            android:id="@+id/btnMove"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Di chuyển"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:foreground="?attr/selectableItemBackground"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#E0E0E0"/>
+
+        <TextView
+            android:id="@+id/btnDeleteAll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Xóa"
+            android:textColor="#D32F2F"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:foreground="?attr/selectableItemBackground"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

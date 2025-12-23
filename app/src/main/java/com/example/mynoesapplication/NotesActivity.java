@@ -51,12 +51,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.example.mynoesapplication.Fragment.*;
+import android.view.View;
+import android.widget.FrameLayout;
+import androidx.activity.OnBackPressedCallback;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
 public class NotesActivity extends AppCompatActivity {
 
     // ================= UI =================
     ImageButton btnOption, btnSetting, btnAdd, btnSearch;
     TextView txtFolderTitle;
     RecyclerView recyclerNotes;
+    ImageButton btnChatbot;
+    FrameLayout chatContainer;
 
     // ================= Firebase =================
     FirebaseAuth mAuth;
@@ -160,6 +169,7 @@ public class NotesActivity extends AppCompatActivity {
 
         bottomActionBar = findViewById(R.id.bottomActionBar);
 
+        // ✅ BƯỚC 5: ánh xạ 3 nút
         btnSelectAll = findViewById(R.id.btnSelectAll);
         btnMove = findViewById(R.id.btnMove);
         btnDelete = findViewById(R.id.btnDeleteAll);
@@ -178,7 +188,49 @@ public class NotesActivity extends AppCompatActivity {
         if (btnSelectAll != null) btnSelectAll.setOnClickListener(v -> onSelectAllClicked());
         if (btnMove != null) btnMove.setOnClickListener(v -> onMoveClicked());
         if (btnDelete != null) btnDelete.setOnClickListener(v -> onDeleteClicked());
+        if (btnChatbot != null) {
+            btnChatbot.setOnClickListener(v -> {
+                FragmentManager fm = getSupportFragmentManager();
+                Fragment existing = fm.findFragmentByTag("chat_overlay");
 
+                if (chatContainer != null && chatContainer.getVisibility() == View.VISIBLE) {
+                    if (existing != null) {
+                        fm.beginTransaction().remove(existing).commitAllowingStateLoss();
+                    }
+                    chatContainer.setVisibility(View.GONE);
+                } else {
+                    fm.beginTransaction()
+                            .replace(R.id.chat_container, new com.example.mynoesapplication.Fragment.ChatFragment(), "chat_overlay")
+                            .commitAllowingStateLoss();
+                    if (chatContainer != null) chatContainer.setVisibility(View.VISIBLE);
+                }
+            });
+        }
+
+// Register back callback outside the btnChatbot null-check so it always runs
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (chatContainer != null && chatContainer.getVisibility() == View.VISIBLE) {
+                    Fragment f = getSupportFragmentManager().findFragmentByTag("chat_overlay");
+                    if (f != null) getSupportFragmentManager().beginTransaction().remove(f).commitAllowingStateLoss();
+                    chatContainer.setVisibility(View.GONE);
+                    return;
+                }
+
+                if (isEditMode) {
+                    toggleEditMode();
+                    return;
+                }
+
+                if (!ROOT.equals(currentFolderId)) {
+                    loadFolders();
+                    return;
+                }
+
+                finish();
+            }
+        });
         updateBottomActionBar();
         pickPdfLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -267,30 +319,76 @@ public class NotesActivity extends AppCompatActivity {
         folderList.clear();
         foldersAdapter.notifyDataSetChanged();
 
-        foldersListener = db.collection("users")
+        // 1) load user's own folders
+        db.collection("users")
                 .document(uid)
                 .collection("folders")
                 .whereEqualTo("deleted", false)
-                .addSnapshotListener(this, (value, error) -> {
-                    if (error != null || value == null) return;
-
+                .get()
+                .addOnSuccessListener(value -> {
                     folderList.clear();
                     for (DocumentSnapshot doc : value.getDocuments()) {
                         Folder f = doc.toObject(Folder.class);
-                        if (f != null) {
-                            f.id = doc.getId();
-                            folderList.add(f);
-                        }
+                        if (f == null) f = new Folder();
+                        f.id = doc.getId();
+                        // mark as local/owned
+                        f.ownerId = null;
+                        folderList.add(f);
                     }
 
-                    Collections.sort(folderList, (a, b) -> {
-                        if (a.createdAt == null && b.createdAt == null) return 0;
-                        if (a.createdAt == null) return 1;
-                        if (b.createdAt == null) return -1;
-                        return a.createdAt.compareTo(b.createdAt);
-                    });
+                    // 2) append joined (shared) folders
+                    db.collection("users")
+                            .document(uid)
+                            .collection("joinedFolders")
+                            .get()
+                            .addOnSuccessListener(joinedSnap -> {
+                                for (DocumentSnapshot jd : joinedSnap.getDocuments()) {
+                                    String roomCode = jd.getId();
+                                    String ownerUid = jd.getString("ownerUid");
+                                    String ownerFolderId = jd.getString("folderId");
+                                    String folderName = jd.getString("folderName");
 
-                    foldersAdapter.notifyDataSetChanged();
+                                    if (ownerUid == null || ownerFolderId == null) continue;
+
+                                    Folder shared = new Folder();
+                                    shared.id = "shared_" + roomCode; // synthetic id
+
+                                    // only append the suffix if it's not already present
+                                    String baseName = folderName != null ? folderName : "Thư mục chia sẻ";
+                                    String displayName = baseName.endsWith(" (Chia sẻ)")
+                                            ? baseName
+                                            : baseName + " (Chia sẻ)";
+
+                                    shared.name = displayName;
+                                    shared.ownerId = ownerUid;
+                                    shared.roomCode = roomCode;
+                                    shared.originalFolderId = ownerFolderId;
+                                    shared.deleted = false;
+                                    folderList.add(shared);
+                                }
+
+                                Collections.sort(folderList, (a, b) -> {
+                                    if (a.createdAt == null && b.createdAt == null) return 0;
+                                    if (a.createdAt == null) return 1;
+                                    if (b.createdAt == null) return -1;
+                                    return a.createdAt.compareTo(b.createdAt);
+                                });
+
+                                foldersAdapter.notifyDataSetChanged();
+                            })
+                            .addOnFailureListener(e -> {
+                                // still show local folders on error
+                                Collections.sort(folderList, (a, b) -> {
+                                    if (a.createdAt == null && b.createdAt == null) return 0;
+                                    if (a.createdAt == null) return 1;
+                                    if (b.createdAt == null) return -1;
+                                    return a.createdAt.compareTo(b.createdAt);
+                                });
+                                foldersAdapter.notifyDataSetChanged();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -523,25 +621,23 @@ public class NotesActivity extends AppCompatActivity {
 
         // ===== CLICK EVENTS =====
         view.findViewById(R.id.optAllNotes).setOnClickListener(v -> {
-            popup.dismiss();
+            dialog.dismiss();
             loadAllNotes();
         });
 
         view.findViewById(R.id.optFolders).setOnClickListener(v -> {
-            popup.dismiss();
+            dialog.dismiss();
             loadFolders();
         });
 
         view.findViewById(R.id.optTrash).setOnClickListener(v -> {
-            popup.dismiss();
+            dialog.dismiss();
             startActivity(new Intent(this, TrashActivity.class));
-            overridePendingTransition(
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_left
-            );
         });
-    }
 
+        dialog.setContentView(view);
+        dialog.show();
+    }
 
     private void showSettingMenu() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
@@ -687,6 +783,7 @@ public class NotesActivity extends AppCompatActivity {
             if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
         }
     }
+
 
     private void exitEditMode() {
         isEditMode = false;
@@ -895,13 +992,18 @@ public class NotesActivity extends AppCompatActivity {
     // Load folders ẩn để move (không đổi màn)
     // ==================================================
     private void ensureFolderListThenShowMoveDialog(List<Note> selected) {
-        // nếu đã có folderList -> show ngay
+        // if already loaded -> show
         if (!folderList.isEmpty()) {
             showMoveDialog(selected);
             return;
         }
 
-        // load 1 lần (get) để có danh sách folder
+        if (uid == null) {
+            Toast.makeText(this, "User not signed in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1) load user's own folders
         db.collection("users")
                 .document(uid)
                 .collection("folders")
@@ -909,29 +1011,62 @@ public class NotesActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     folderList.clear();
-                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        Folder f = doc.toObject(Folder.class);
-                        if (f != null) {
-                            f.id = doc.getId();
-                            folderList.add(f);
-                        }
+                    for (DocumentSnapshot d : snapshot.getDocuments()) {
+                        Folder f = d.toObject(Folder.class);
+                        if (f == null) f = new Folder();
+                        f.id = d.getId();
+                        // ensure ownerId null for local folders
+                        f.ownerId = null;
+                        folderList.add(f);
                     }
 
-                    Collections.sort(folderList, (a, b) -> {
-                        if (a.createdAt == null && b.createdAt == null) return 0;
-                        if (a.createdAt == null) return 1;
-                        if (b.createdAt == null) return -1;
-                        return a.createdAt.compareTo(b.createdAt);
-                    });
+                    // 2) load joined folders (shared by others) and append
+                    db.collection("users")
+                            .document(uid)
+                            .collection("joinedFolders")
+                            .get()
+                            .addOnSuccessListener(joinedSnap -> {
+                                for (DocumentSnapshot jd : joinedSnap.getDocuments()) {
+                                    String roomCode = jd.getId();
+                                    String ownerUid = jd.getString("ownerUid");
+                                    String ownerFolderId = jd.getString("folderId");
+                                    String folderName = jd.getString("folderName");
 
-                    showMoveDialog(selected);
+                                    if (ownerUid == null || ownerFolderId == null) continue;
+
+                                    Folder shared = new Folder();
+                                    // use a synthetic id so it won't conflict with local folder ids
+                                    shared.id = "shared_" + roomCode;
+
+                                    // only append the suffix if it's not already present
+                                    String baseName = folderName != null ? folderName : "Thư mục chia sẻ";
+                                    String displayName = baseName.endsWith(" (Chia sẻ)")
+                                            ? baseName
+                                            : baseName + " (Chia sẻ)";
+
+                                    shared.name = displayName;
+                                    shared.ownerId = ownerUid;
+                                    shared.roomCode = roomCode;
+                                    shared.originalFolderId = ownerFolderId;
+                                    shared.deleted = false;
+                                    folderList.add(shared);
+                                }
+
+                                // notify adapter and show dialog
+                                foldersAdapter.notifyDataSetChanged();
+                                showMoveDialog(selected);
+                            })
+                            .addOnFailureListener(e -> {
+                                // still show dialog with local folders
+                                foldersAdapter.notifyDataSetChanged();
+                                showMoveDialog(selected);
+                            });
+
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Load thư mục lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
-    }
-
-    private void showMoveDialog(List<Note> selected) {
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }    private void showMoveDialog(List<Note> selected) {
         if (folderList.isEmpty()) {
             Toast.makeText(this, "Chưa có thư mục để di chuyển", Toast.LENGTH_SHORT).show();
             return;
@@ -951,14 +1086,42 @@ public class NotesActivity extends AppCompatActivity {
                     Timestamp now = Timestamp.now();
                     for (Note n : selected) {
                         if (n.id == null) continue;
-                        db.collection("users")
-                                .document(uid)
-                                .collection("notes")
-                                .document(n.id)
-                                .update(
-                                        "folderId", target.id,
-                                        "updatedAt", now
-                                );
+
+                        // If target is owned by another user -> copy note into owner's collection (read\-only sharing)
+                        if (target.ownerId != null && !target.ownerId.equals(uid)) {
+                            Map<String, Object> copy = new HashMap<>();
+                            copy.put("title", n.title == null ? "" : n.title);
+                            copy.put("content", n.content == null ? "" : n.content);
+                            // target.originalFolderId is the owner's folder id stored on the room/folder object,
+                            // fall back to target.id if originalFolderId is not present.
+                            String ownerFolderId = (target.originalFolderId != null && !target.originalFolderId.isEmpty())
+                                    ? target.originalFolderId
+                                    : target.id;
+                            copy.put("folderId", ownerFolderId);
+                            copy.put("createdAt", now);
+                            copy.put("updatedAt", now);
+                            copy.put("deleted", false);
+                            copy.put("deletedAt", null);
+
+                            db.collection("users")
+                                    .document(target.ownerId)
+                                    .collection("notes")
+                                    .add(copy)
+                                    .addOnFailureListener(e -> Toast.makeText(this, "Copy failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+
+                            // Optionally: remove or mark local note deleted if you want move semantics across accounts.
+                            // To keep a "copy" behavior, do nothing to the local note.
+                        } else {
+                            // Local folder -> just update folderId
+                            db.collection("users")
+                                    .document(uid)
+                                    .collection("notes")
+                                    .document(n.id)
+                                    .update(
+                                            "folderId", target.id,
+                                            "updatedAt", now
+                                    );
+                        }
                     }
 
                     exitEditMode();
