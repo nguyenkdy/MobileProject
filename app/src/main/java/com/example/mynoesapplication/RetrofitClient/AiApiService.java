@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class AiApiService {
 
     private static final String BASE_URL = "https://generativelanguage.googleapis.com/";
-    private static final String API_KEY = "AIzaSyDmUnrT0I7dKsouW3_ngRI_J3fX9i8WxPU";
+    private static final String API_KEY = "API_KEY_HERE";
 
     public interface Api {
         // Use v1 and the generateText RPC for Gemini text generation
