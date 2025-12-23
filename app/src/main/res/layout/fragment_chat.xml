@@ -3,97 +3,144 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/chat_overlay_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="12dp"
-    android:background="@drawable/bg_popup_note">
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent"
+    android:padding="12dp">
 
-    <ImageButton
-        android:id="@+id/btnCloseChat"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_gravity="end|top"
-        android:contentDescription="Close"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        app:tint="@android:color/darker_gray"/>
-
+    <!-- CONTAINER -->
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="48dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
+        <!-- ===== HEADER CARD ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_chat_card"
+            android:elevation="10dp"
+            android:padding="12dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp">
+
+                <TextView
+                    android:id="@+id/txtChatTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AI Assistant"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#222222"
+                    android:layout_centerVertical="true" />
+
+                <!-- NÚT PHÓNG TO -->
+                <ImageButton
+                    android:id="@+id/btnExpandChat"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginEnd="36dp"
+                    android:src="@drawable/ic_expand"
+                    android:contentDescription="Expand"
+                    android:scaleType="centerInside"
+                    android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+                <ImageButton
+                    android:id="@+id/btnCloseChat"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:contentDescription="Close"
+                    android:src="@drawable/ic_close"
+                    android:scaleType="centerInside"
+                    android:background="?android:attr/selectableItemBackgroundBorderless" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <!-- ===== CHAT LIST (NO CARD – NO WHITE BACKGROUND) ===== -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvChat"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginVertical="8dp"
+            android:background="@android:color/transparent"
             android:clipToPadding="false"
-            android:paddingBottom="8dp"/>
+            android:paddingBottom="8dp" />
 
+        <!-- ===== INPUT CARD ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingTop="8dp">
+            android:background="@drawable/bg_chat_card"
+            android:elevation="10dp"
+            android:padding="10dp">
 
+            <!-- MODE BUTTONS -->
             <LinearLayout
                 android:id="@+id/modeButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-
                 <ImageButton
                     android:id="@+id/btnModeChat"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:contentDescription="Text mode"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:src="@drawable/ic_chat"
-                    android:layout_marginEnd="0dp"
-                    android:scaleType="centerInside"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    app:tint="@null" />
+                    android:background="@drawable/bg_icon_button"
+                    android:scaleType="centerInside" />
 
                 <ImageButton
                     android:id="@+id/btnModeNote"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:contentDescription="Note mode"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="6dp"
                     android:src="@drawable/ic_text"
-                    android:layout_marginEnd="0dp"
-                    android:scaleType="centerInside"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    app:tint="@null" />
+                    android:background="@drawable/bg_icon_button"
+                    android:scaleType="centerInside" />
 
                 <ImageButton
                     android:id="@+id/btnModeMicro"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:contentDescription="Voice"
-                    android:src="@android:drawable/ic_btn_speak_now"
-
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    app:tint="@android:color/darker_gray"/>
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@drawable/ic_mic"
+                    android:background="@drawable/bg_icon_button"
+                    android:scaleType="centerInside" />
             </LinearLayout>
 
+            <!-- MESSAGE INPUT -->
             <EditText
                 android:id="@+id/edtMessage"
                 android:layout_width="0dp"
-                android:layout_weight="1"
                 android:layout_height="40dp"
-                android:layout_marginStart="0dp"
-                android:hint="Nhập tin nhắn..."
-                android:background="@android:drawable/edit_text"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Hỏi AI điều gì đó…"
+                android:background="@drawable/bg_chat_input"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:textSize="14sp"
                 android:inputType="textMultiLine"
-                android:padding="8dp"/>
+                android:maxLines="3" />
 
+            <!-- SEND -->
             <ImageButton
                 android:id="@+id/btnSend"
-                android:layout_width="48dp"
-                android:layout_height="40dp"
-                android:src="@android:drawable/ic_menu_send"
-                android:background="?android:attr/selectableItemBackgroundBorderless"/>
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_send"
+                android:background="@drawable/bg_send_button"
+                android:scaleType="centerInside" />
         </LinearLayout>
+
     </LinearLayout>
+
 </FrameLayout>

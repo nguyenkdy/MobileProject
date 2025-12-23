@@ -5,7 +5,6 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
@@ -18,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.mynoesapplication.Adapter.ChatAdapter;
 import com.example.mynoesapplication.Data.AiRequest;
 import com.example.mynoesapplication.Data.AiResponse;
-import com.example.mynoesapplication.Data.*;
+import com.example.mynoesapplication.Data.ChatMessage;
 import com.example.mynoesapplication.R;
 import com.example.mynoesapplication.RetrofitClient.AiApiService;
 import com.google.firebase.Timestamp;
@@ -35,50 +34,75 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ChatFragment extends Fragment {
+
+    // ================= UI =================
     private RecyclerView rv;
     private EditText edt;
+    private ImageButton btnModeChat, btnModeNote, btnSend;
+    private ImageButton btnExpandChat, btnCloseChat;
+
+    // ================= STATE =================
+    private boolean isExpanded = false;
+    private View rootView;
+
+    // ================= DATA =================
     private ChatAdapter adapter;
     private final List<ChatMessage> messages = new ArrayList<>();
-    private ImageButton btnModeChat, btnModeNote;
-    private ImageButton btnSend;
+
     private enum Mode { CHAT, NOTE }
     private Mode mode = Mode.CHAT;
 
+    // ================= FIREBASE =================
     private FirebaseFirestore db;
     private String uid;
 
+    // =========================================================
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
         View v = inflater.inflate(R.layout.fragment_chat, container, false);
+        rootView = v;
+
+        // ===== BIND UI =====
         rv = v.findViewById(R.id.rvChat);
         edt = v.findViewById(R.id.edtMessage);
         btnModeChat = v.findViewById(R.id.btnModeChat);
         btnModeNote = v.findViewById(R.id.btnModeNote);
         btnSend = v.findViewById(R.id.btnSend);
+        btnExpandChat = v.findViewById(R.id.btnExpandChat);
+        btnCloseChat = v.findViewById(R.id.btnCloseChat);
 
+        // ===== FIREBASE =====
         db = FirebaseFirestore.getInstance();
         uid = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid()
                 : null;
 
+        // ===== RECYCLER =====
         adapter = new ChatAdapter(messages);
         LinearLayoutManager lm = new LinearLayoutManager(getContext());
         lm.setStackFromEnd(true);
         rv.setLayoutManager(lm);
         rv.setAdapter(adapter);
 
+        // ===== DEFAULT MODE =====
         setMode(Mode.CHAT);
 
-        btnModeChat.setOnClickListener(x -> setMode(Mode.CHAT));
-        btnModeNote.setOnClickListener(x -> setMode(Mode.NOTE));
+        // ===== EVENTS =====
+        btnModeChat.setOnClickListener(v1 -> setMode(Mode.CHAT));
+        btnModeNote.setOnClickListener(v1 -> setMode(Mode.NOTE));
 
-        btnSend.setOnClickListener(x -> {
+        btnSend.setOnClickListener(v1 -> {
             String txt = edt.getText().toString().trim();
             if (TextUtils.isEmpty(txt)) return;
+
             addMessage(txt, true);
             edt.setText("");
+
             if (mode == Mode.NOTE) {
                 createNoteFromText(txt);
             } else {
@@ -86,39 +110,54 @@ public class ChatFragment extends Fragment {
             }
         });
 
-        v.findViewById(R.id.btnCloseChat).setOnClickListener(view -> {
-            if (getParentFragmentManager() != null) {
-                getParentFragmentManager().beginTransaction().remove(ChatFragment.this).commitAllowingStateLoss();
-            }
-            if (getActivity() != null) {
-                View host = getActivity().findViewById(R.id.chat_container);
-                if (host != null) host.setVisibility(View.GONE);
-            }
-        });
+        // ===== PHÓNG TO / THU NHỎ =====
+        btnExpandChat.setOnClickListener(v1 -> toggleExpand());
+
+        // ===== ĐÓNG CHAT =====
+        btnCloseChat.setOnClickListener(v1 -> closeChat());
 
         return v;
     }
 
+    // =========================================================
+    // MODE
+    // =========================================================
     private void setMode(Mode m) {
         mode = m;
-        btnModeChat.setAlpha(m == Mode.CHAT ? 1f : 0.6f);
-        btnModeNote.setAlpha(m == Mode.NOTE ? 1f : 0.6f);
-        edt.setHint(m == Mode.NOTE ? "Enter note content..." : "Nhập tin nhắn...");
+        btnModeChat.setAlpha(m == Mode.CHAT ? 1f : 0.5f);
+        btnModeNote.setAlpha(m == Mode.NOTE ? 1f : 0.5f);
+        edt.setHint(m == Mode.NOTE
+                ? "Nhập nội dung để tạo ghi chú…"
+                : "Nhập tin nhắn…");
     }
 
+    // =========================================================
+    // MESSAGE
+    // =========================================================
     private void addMessage(String text, boolean isUser) {
-        messages.add(new ChatMessage(String.valueOf(System.currentTimeMillis()), text, isUser, System.currentTimeMillis()));
+        messages.add(new ChatMessage(
+                String.valueOf(System.currentTimeMillis()),
+                text,
+                isUser,
+                System.currentTimeMillis()
+        ));
         adapter.notifyItemInserted(messages.size() - 1);
         rv.scrollToPosition(messages.size() - 1);
     }
 
+    // =========================================================
+    // CREATE NOTE
+    // =========================================================
     private void createNoteFromText(String content) {
         if (uid == null) {
             addMessage("Bạn cần đăng nhập để tạo ghi chú.", false);
             return;
         }
 
-        String title = content.length() > 40 ? content.substring(0, 40) : content;
+        String title = content.length() > 40
+                ? content.substring(0, 40)
+                : content;
+
         Map<String, Object> doc = new HashMap<>();
         doc.put("title", title);
         doc.put("content", content);
@@ -130,36 +169,92 @@ public class ChatFragment extends Fragment {
                 .document(uid)
                 .collection("notes")
                 .add(doc)
-                .addOnSuccessListener(ref -> addMessage("Đã tạo ghi chú.", false))
-                .addOnFailureListener(e -> addMessage("Tạo ghi chú thất bại: " + e.getMessage(), false));
+                .addOnSuccessListener(ref ->
+                        addMessage("✅ Đã tạo ghi chú.", false))
+                .addOnFailureListener(e ->
+                        addMessage("❌ Tạo ghi chú thất bại: " + e.getMessage(), false));
     }
 
+    // =========================================================
+    // AI CALL
+    // =========================================================
     private void callAiForReply(String prompt) {
-        AiRequest req = new AiRequest(prompt +", answer in Vietnamese, nicely and shortly.");
+        AiRequest req = new AiRequest(
+                prompt + ", answer in Vietnamese, nicely and shortly."
+        );
+
         AiApiService.getApi().summarize(req)
                 .enqueue(new Callback<AiResponse>() {
                     @Override
-                    public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            String aiText = response.body().getSummary();
-                            if (aiText == null) aiText = "AI returned empty.";
-                            final String out = aiText;
-                            if (getActivity() != null) getActivity().runOnUiThread(() -> addMessage(out, false));
+                    public void onResponse(
+                            Call<AiResponse> call,
+                            Response<AiResponse> response
+                    ) {
+                        if (response.isSuccessful()
+                                && response.body() != null
+                                && response.body().getSummary() != null) {
+
+                            addMessage(response.body().getSummary(), false);
+
                         } else {
-                            String err = "AI error";
-                            try {
-                                if (response.errorBody() != null) err = response.errorBody().string();
-                            } catch (Exception ignored) {}
-                            final String out = "Failed: " + err;
-                            if (getActivity() != null) getActivity().runOnUiThread(() -> addMessage(out, false));
+                            addMessage("❌ AI trả về lỗi.", false);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<AiResponse> call, Throwable t) {
-                        if (getActivity() != null) getActivity().runOnUiThread(() ->
-                                addMessage("AI call failed: " + t.getMessage(), false));
+                        addMessage("❌ AI lỗi: " + t.getMessage(), false);
                     }
                 });
+    }
+
+    // =========================================================
+    // EXPAND / COLLAPSE CHAT
+    // =========================================================
+    private void toggleExpand() {
+        if (getActivity() == null) return;
+
+        View container = getActivity().findViewById(R.id.chat_container);
+        if (container == null) return;
+
+        ViewGroup.LayoutParams lp = container.getLayoutParams();
+
+        if (!isExpanded) {
+            // 🔥 PHÓNG TO (KHÔNG CHE APPBAR)
+            int[] location = new int[2];
+            container.getLocationOnScreen(location);
+
+            int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            int topY = location[1];
+
+            lp.height = screenHeight - topY;
+            btnExpandChat.setImageResource(R.drawable.ic_collapse);
+            isExpanded = true;
+        } else {
+            // 🔽 THU NHỎ
+            lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            btnExpandChat.setImageResource(R.drawable.ic_expand);
+            isExpanded = false;
+        }
+
+        container.setLayoutParams(lp);
+    }
+
+
+    // =========================================================
+    // CLOSE CHAT
+    // =========================================================
+    private void closeChat() {
+        if (getParentFragmentManager() != null) {
+            getParentFragmentManager()
+                    .beginTransaction()
+                    .remove(this)
+                    .commitAllowingStateLoss();
+        }
+
+        if (getActivity() != null) {
+            View host = getActivity().findViewById(R.id.chat_container);
+            if (host != null) host.setVisibility(View.GONE);
+        }
     }
 }

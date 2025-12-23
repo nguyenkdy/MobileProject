@@ -28,6 +28,7 @@ import retrofit2.Response;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mynoesapplication.Fragment.NoteSummaryFragment;
@@ -211,6 +212,22 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         ctx.startActivity(i);
                     });
         });
+
+        // ================= PIN + EDIT MODE UI =================
+        if (isEditMode) {
+            h.imgPin.setVisibility(View.GONE);
+        } else {
+            h.imgPin.setVisibility(note.isPinned ? View.VISIBLE : View.GONE);
+        }
+
+        if (h.layoutHeader != null) {
+            if (note.isPinned) {
+                h.layoutHeader.setBackgroundResource(R.color.note_header_pinned);
+            } else {
+                h.layoutHeader.setBackgroundResource(R.color.note_header_normal);
+            }
+        }
+
 
         // ===== OPTIONS =====
         h.btnOptions.setOnClickListener(v -> showNoteOptions(v, note));
