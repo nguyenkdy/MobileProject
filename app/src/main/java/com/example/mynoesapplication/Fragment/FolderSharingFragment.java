@@ -92,7 +92,7 @@ public class FolderSharingFragment extends DialogFragment {
                              @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(
-                R.layout.fragment_folder_sharing,
+                R.layout.activity_folder_sharing,
                 container,
                 false
         );

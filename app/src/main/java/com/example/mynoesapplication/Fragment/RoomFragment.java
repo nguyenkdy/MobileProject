@@ -77,12 +77,9 @@ public class RoomFragment extends DialogFragment {
         View view = inflater.inflate(R.layout.room_detail, container, false);
 
         ownerContainer = view.findViewById(R.id.owner_container);
-        joinContainer = view.findViewById(R.id.join_container);
         txtRoomCode = view.findViewById(R.id.txtRoomCode);
         txtOwnerFolderName = view.findViewById(R.id.txtOwnerFolderName);
-        edtRoomCode = view.findViewById(R.id.edtRoomCode);
         btnCopyCode = view.findViewById(R.id.btnCopyCode);
-        btnJoin = view.findViewById(R.id.btnJoin);
 
         setupUI();
         return view;

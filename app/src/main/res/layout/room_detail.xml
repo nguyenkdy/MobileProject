@@ -25,63 +25,63 @@
             app:strokeColor="#E5E7EB">
 
             <LinearLayout
-                android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:padding="24dp">
 
                 <TextView
                     android:id="@+id/txtOwnerFolderName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Tên Thư Mục Của Bạn"
-                    android:textSize="22sp"
                     android:fontFamily="sans-serif-medium"
-                    android:textColor="#111827" />
+                    android:text="Tên Thư Mục Của Bạn"
+                    android:textColor="#111827"
+                    android:textSize="22sp" />
 
                 <View
-                    android:layout_width="80dp"
+                    android:layout_width="136dp"
                     android:layout_height="4dp"
                     android:layout_marginTop="12dp"
-                    android:background="#2563EB" />
+                    android:background="#ECEDFB" />
 
                 <TextView
-                    android:layout_marginTop="24dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="MÃ PHÒNG CHIA SẺ"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:layout_marginTop="24dp"
                     android:letterSpacing="0.1"
-                    android:textColor="#6B7280" />
+                    android:text="MÃ PHÒNG CHIA SẺ"
+                    android:textColor="#6B7280"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/txtRoomCode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="SS9F4E"
-                    android:textSize="42sp"
+                    android:background="#F3F4F6"
                     android:fontFamily="monospace"
-                    android:textStyle="bold"
                     android:gravity="center"
                     android:letterSpacing="0.2"
                     android:paddingVertical="16dp"
-                    android:background="#F3F4F6"
-                    android:textColor="#2563EB" />
+                    android:text="SS9F4E"
+                    android:textColor="#2563EB"
+                    android:textSize="42sp"
+                    android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCopyCode"
-                    android:layout_marginTop="24dp"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="Sao chép mã"
-                    app:icon="@android:drawable/ic_menu_edit"
-                    android:textAllCaps="false"
+                    android:layout_marginTop="24dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
+                    android:text="Sao chép mã"
+                    android:textAllCaps="false"
+                    app:backgroundTint="#2563EB"
                     app:cornerRadius="16dp"
-                    app:backgroundTint="#2563EB" />
+                    app:icon="@android:drawable/ic_menu_edit" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
