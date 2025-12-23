@@ -48,19 +48,22 @@
             app:layout_constraintBottom_toBottomOf="parent"/>
 
         <!-- SEARCH -->
+
+        <!-- EDIT -->
+
         <ImageButton
             android:id="@+id/btnSearch"
             android:layout_width="30dp"
             android:layout_height="30dp"
+            android:layout_marginEnd="12dp"
             android:background="@drawable/ripple_click"
-            android:src="@drawable/ic_search"
             android:scaleType="centerInside"
+            android:src="@drawable/ic_search"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btnEdit"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="12dp"/>
+            app:layout_constraintVertical_bias="0.533" />
 
-        <!-- EDIT -->
         <ImageButton
             android:id="@+id/btnEdit"
             android:layout_width="30dp"
@@ -314,18 +317,20 @@
         android:contentDescription="Open chat"
         android:elevation="8dp"
         android:scaleType="centerInside"
-        android:src="@drawable/ic_chatbot"
+        android:src="@drawable/ic_chatbot_new"
         app:layout_constraintBottom_toTopOf="@+id/btnAdd"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <FrameLayout
         android:id="@+id/chat_container"
-        android:layout_width="280dp"
-        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_height="300dp"
         android:visibility="gone"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="12dp"
         android:background="@drawable/bg_popup_note"
+        android:elevation="12dp"
+
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/btnOpenChat" />
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

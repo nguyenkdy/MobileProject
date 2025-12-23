@@ -10,10 +10,11 @@ import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import androidx.constraintlayout.widget.ConstraintLayout;
 import com.example.mynoesapplication.Adapter.ChatAdapter;
 import com.example.mynoesapplication.Data.AiRequest;
 import com.example.mynoesapplication.Data.AiResponse;
@@ -43,7 +44,9 @@ public class ChatFragment extends Fragment {
 
     // ================= STATE =================
     private boolean isExpanded = false;
-    private View rootView;
+
+    // ================= SIZE CONFIG =================
+    private static final int COLLAPSED_HEIGHT_DP = 300;
 
     // ================= DATA =================
     private ChatAdapter adapter;
@@ -65,7 +68,6 @@ public class ChatFragment extends Fragment {
             @Nullable Bundle savedInstanceState
     ) {
         View v = inflater.inflate(R.layout.fragment_chat, container, false);
-        rootView = v;
 
         // ===== BIND UI =====
         rv = v.findViewById(R.id.rvChat);
@@ -89,6 +91,9 @@ public class ChatFragment extends Fragment {
         rv.setLayoutManager(lm);
         rv.setAdapter(adapter);
 
+        // ===== RESET SIZE KHI MỞ CHAT (QUAN TRỌNG) =====
+        resetToCollapsed();
+
         // ===== DEFAULT MODE =====
         setMode(Mode.CHAT);
 
@@ -110,13 +115,43 @@ public class ChatFragment extends Fragment {
             }
         });
 
-        // ===== PHÓNG TO / THU NHỎ =====
         btnExpandChat.setOnClickListener(v1 -> toggleExpand());
-
-        // ===== ĐÓNG CHAT =====
         btnCloseChat.setOnClickListener(v1 -> closeChat());
 
         return v;
+    }
+
+    // =========================================================
+    // RESET SIZE
+    // =========================================================
+    private void resetToCollapsed() {
+        if (getActivity() == null) return;
+
+        View container = getActivity().findViewById(R.id.chat_container);
+        if (container == null) return;
+
+        ViewGroup.LayoutParams baseLp = container.getLayoutParams();
+        if (!(baseLp instanceof ConstraintLayout.LayoutParams)) return;
+
+        ConstraintLayout.LayoutParams lp = (ConstraintLayout.LayoutParams) baseLp;
+
+        lp.width = dp(280);
+        lp.height = dp(COLLAPSED_HEIGHT_DP);
+
+        lp.startToStart = ConstraintLayout.LayoutParams.UNSET;
+        lp.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID;
+
+        lp.topToBottom = ConstraintLayout.LayoutParams.UNSET;
+        lp.bottomToBottom = ConstraintLayout.LayoutParams.UNSET;
+
+        lp.bottomToTop = R.id.btnOpenChat;
+
+        lp.setMargins(0, 0, dp(12), dp(6));
+
+        container.setLayoutParams(lp);
+
+        isExpanded = false;
+        if (btnExpandChat != null) btnExpandChat.setImageResource(R.drawable.ic_expand);
     }
 
     // =========================================================
@@ -186,16 +221,12 @@ public class ChatFragment extends Fragment {
         AiApiService.getApi().summarize(req)
                 .enqueue(new Callback<AiResponse>() {
                     @Override
-                    public void onResponse(
-                            Call<AiResponse> call,
-                            Response<AiResponse> response
-                    ) {
+                    public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
                         if (response.isSuccessful()
                                 && response.body() != null
                                 && response.body().getSummary() != null) {
 
                             addMessage(response.body().getSummary(), false);
-
                         } else {
                             addMessage("❌ AI trả về lỗi.", false);
                         }
@@ -209,7 +240,7 @@ public class ChatFragment extends Fragment {
     }
 
     // =========================================================
-    // EXPAND / COLLAPSE CHAT
+    // EXPAND / COLLAPSE (2 TRẠNG THÁI DUY NHẤT)
     // =========================================================
     private void toggleExpand() {
         if (getActivity() == null) return;
@@ -217,29 +248,59 @@ public class ChatFragment extends Fragment {
         View container = getActivity().findViewById(R.id.chat_container);
         if (container == null) return;
 
-        ViewGroup.LayoutParams lp = container.getLayoutParams();
+        ViewGroup.LayoutParams baseLp = container.getLayoutParams();
+        if (!(baseLp instanceof ConstraintLayout.LayoutParams)) return;
+
+        ConstraintLayout.LayoutParams lp = (ConstraintLayout.LayoutParams) baseLp;
 
         if (!isExpanded) {
-            // 🔥 PHÓNG TO (KHÔNG CHE APPBAR)
-            int[] location = new int[2];
-            container.getLocationOnScreen(location);
+            // ✅ EXPAND: bám từ dưới topBar tới đáy màn hình
+            lp.width = 0;   // match constraints (full width theo constraint)
+            lp.height = 0;  // match constraints (full height theo constraint)
 
-            int screenHeight = getResources().getDisplayMetrics().heightPixels;
-            int topY = location[1];
+            lp.startToStart = ConstraintLayout.LayoutParams.PARENT_ID;
+            lp.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID;
 
-            lp.height = screenHeight - topY;
+            lp.topToBottom = R.id.topBar; // không bao giờ vượt qua topBar
+            lp.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
+
+            // bỏ constraint cũ (đang bám vào btnOpenChat)
+            lp.bottomToTop = ConstraintLayout.LayoutParams.UNSET;
+
+            lp.setMargins(dp(12), dp(8), dp(12), dp(12));
+
+            container.setLayoutParams(lp);
+
             btnExpandChat.setImageResource(R.drawable.ic_collapse);
             isExpanded = true;
+
         } else {
-            // 🔽 THU NHỎ
-            lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            // ✅ COLLAPSE: trở lại “popup” nằm sát trên chatbot
+            lp.width = dp(280);
+            lp.height = dp(COLLAPSED_HEIGHT_DP);
+
+            lp.startToStart = ConstraintLayout.LayoutParams.UNSET;
+            lp.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID;
+
+            lp.topToBottom = ConstraintLayout.LayoutParams.UNSET;
+            lp.bottomToBottom = ConstraintLayout.LayoutParams.UNSET;
+
+            // bám lại phía trên nút chatbot
+            lp.bottomToTop = R.id.btnOpenChat;
+
+            lp.setMargins(0, 0, dp(12), dp(6)); // ✅ sát chatbot hơn
+
+            container.setLayoutParams(lp);
+
             btnExpandChat.setImageResource(R.drawable.ic_expand);
             isExpanded = false;
         }
-
-        container.setLayoutParams(lp);
     }
 
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
 
     // =========================================================
     // CLOSE CHAT

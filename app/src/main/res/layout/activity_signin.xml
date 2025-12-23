@@ -82,15 +82,38 @@
                 android:inputType="textPassword"/>
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- REMEMBER -->
-        <com.google.android.material.checkbox.MaterialCheckBox
-            android:id="@+id/checkRemember"
-            android:layout_width="wrap_content"
+        <!-- REMEMBER + FORGOT PASSWORD -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Nhớ đăng nhập"
-            android:textColor="#FFFFFF"
             android:layout_marginTop="12dp"
-            android:layout_gravity="start"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- REMEMBER -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkRemember"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nhớ đăng nhập"
+                android:textColor="#FFFFFF"/>
+
+            <!-- SPACE -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <!-- FORGOT PASSWORD -->
+            <TextView
+                android:id="@+id/txtForgotPassword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Quên mật khẩu?"
+                android:textColor="#BBDEFB"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
 
         <!-- LOGIN BUTTON -->
         <com.google.android.material.button.MaterialButton

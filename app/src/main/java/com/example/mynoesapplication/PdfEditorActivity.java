@@ -3,24 +3,39 @@ package com.example.mynoesapplication;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.io.File;
 import java.io.IOException;
 
 public class PdfEditorActivity extends AppCompatActivity {
 
+    // ================= PDF =================
     private RecyclerView recyclerPdf;
     private PdfRenderer pdfRenderer;
     private ParcelFileDescriptor fileDescriptor;
@@ -28,36 +43,70 @@ public class PdfEditorActivity extends AppCompatActivity {
     private String pdfPath;
     private String noteId;
 
+    // ================= STATE =================
     private boolean isReadOnly = false;
-
-    // Tool state (để biết slider đang chỉnh cái gì)
     private DrawingView.Tool currentTool = DrawingView.Tool.PEN;
 
-    // Lưu size hiện tại để show trên dialog (UX)
     private int penSize = 6;       // 2..12
     private int markerSize = 20;   // 10..40
 
-    // 🔥 adapter field
     private PdfPageAdapter adapter;
 
-    // UI refs
-    private LinearLayout drawToolbar;
+    // ================= UI =================
+    // ✅ FIX CRASH: XML là ConstraintLayout -> dùng View để không cast sai
+    private View drawToolbar;
+
     private ImageButton btnPen, btnMarker, btnEraser, btnUndo, btnRedo, btnColor, btnReadOnly;
+
+    // title
+    private EditText edtTitle;
+    private TextView txtTitle; // (không dùng trong layout hiện tại, giữ lại cho tương thích)
+
+    // realtime title listener
+    private ListenerRegistration noteListener;
+
+    // ===== TITLE AUTOSAVE =====
+    private final Handler titleHandler = new Handler(Looper.getMainLooper());
+    private Runnable titleSaveRunnable;
+    private boolean suppressTitleWatcher = false;
+    private String lastSavedTitle = "";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_pdf_editor);
 
-        // ===== BACK =====
+        // ===== EDGE TO EDGE (an toàn) =====
+        View root = findViewById(R.id.rootLayout);
+        if (root != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(bars.left, bars.top, bars.right, 0);
+                return insets;
+            });
+        }
+
+        // toolbar bottom inset
+        View toolbarView = findViewById(R.id.drawToolbar);
+        if (toolbarView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(toolbarView, (v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                int extra = dp(8);
+                v.setPadding(
+                        v.getPaddingLeft(),
+                        v.getPaddingTop(),
+                        v.getPaddingRight(),
+                        bars.bottom + extra
+                );
+                return insets;
+            });
+        }
+
+        // ================= UI =================
         ImageButton btnBack = findViewById(R.id.btnBack);
-        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
-
-        // ===== RECYCLER =====
         recyclerPdf = findViewById(R.id.recyclerPdf);
-        recyclerPdf.setLayoutManager(new LinearLayoutManager(this));
-
-        // ===== TOOLBAR =====
         drawToolbar = findViewById(R.id.drawToolbar);
 
         btnPen = findViewById(R.id.btnPen);
@@ -68,18 +117,18 @@ public class PdfEditorActivity extends AppCompatActivity {
         btnColor = findViewById(R.id.btnColor);
         btnReadOnly = findViewById(R.id.btnReadOnly);
 
-        // ===== INTENT DATA =====
+        edtTitle = findViewById(R.id.edtTitle);
+
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+
+        if (recyclerPdf != null) recyclerPdf.setLayoutManager(new LinearLayoutManager(this));
+
+        // ================= INTENT =================
         pdfPath = getIntent().getStringExtra("pdfPath");
         noteId = getIntent().getStringExtra("noteId");
 
-        if (pdfPath == null || pdfPath.trim().isEmpty()) {
-            Toast.makeText(this, "Không tìm thấy PDF", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
-        if (noteId == null || noteId.trim().isEmpty()) {
-            Toast.makeText(this, "Thiếu noteId", Toast.LENGTH_SHORT).show();
+        if (pdfPath == null || pdfPath.trim().isEmpty() || noteId == null || noteId.trim().isEmpty()) {
+            Toast.makeText(this, "Thiếu dữ liệu PDF", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -91,57 +140,42 @@ public class PdfEditorActivity extends AppCompatActivity {
             return;
         }
 
-        // ===== OPEN PDF =====
         openPdf(pdfFile);
 
-        // ===== READ ONLY TOGGLE =====
-        if (btnReadOnly != null) {
-            btnReadOnly.setOnClickListener(v -> toggleReadOnly());
-        }
+        // ================= LISTEN TITLE REALTIME =================
+        listenNoteTitle();
 
-        // ===== TOOL ACTIONS =====
-        if (btnPen != null) {
-            btnPen.setOnClickListener(v -> {
-                currentTool = DrawingView.Tool.PEN;
-                if (adapter != null) adapter.setPen();
-                updateToolUi();
-            });
-        }
+        // ================= TITLE EDIT =================
+        setupTitleEditing();
 
-        if (btnMarker != null) {
-            btnMarker.setOnClickListener(v -> {
-                currentTool = DrawingView.Tool.MARKER;
-                if (adapter != null) adapter.setMarker();
-                updateToolUi();
-            });
-        }
+        // ================= READ ONLY =================
+        if (btnReadOnly != null) btnReadOnly.setOnClickListener(v -> toggleReadOnly());
 
-        if (btnEraser != null) {
-            btnEraser.setOnClickListener(v -> {
-                currentTool = DrawingView.Tool.ERASER;
-                if (adapter != null) adapter.setEraser();
-                updateToolUi();
-            });
-        }
+        // ================= TOOLS =================
+        if (btnPen != null) btnPen.setOnClickListener(v -> {
+            currentTool = DrawingView.Tool.PEN;
+            if (adapter != null) adapter.setPen();
+            updateToolUi();
+        });
 
-        if (btnUndo != null) {
-            btnUndo.setOnClickListener(v -> {
-                if (adapter != null) adapter.undo();
-            });
-        }
+        if (btnMarker != null) btnMarker.setOnClickListener(v -> {
+            currentTool = DrawingView.Tool.MARKER;
+            if (adapter != null) adapter.setMarker();
+            updateToolUi();
+        });
 
-        if (btnRedo != null) {
-            btnRedo.setOnClickListener(v -> {
-                if (adapter != null) adapter.redo();
-            });
-        }
+        if (btnEraser != null) btnEraser.setOnClickListener(v -> {
+            currentTool = DrawingView.Tool.ERASER;
+            if (adapter != null) adapter.setEraser();
+            updateToolUi();
+        });
 
-        if (btnColor != null) {
-            btnColor.setOnClickListener(v -> showColorAndSizePicker());
-        }
+        if (btnUndo != null) btnUndo.setOnClickListener(v -> { if (adapter != null) adapter.undo(); });
+        if (btnRedo != null) btnRedo.setOnClickListener(v -> { if (adapter != null) adapter.redo(); });
 
-        // Mặc định: edit mode (toolbar hiện)
-        drawToolbar.setVisibility(View.VISIBLE);
+        if (btnColor != null) btnColor.setOnClickListener(v -> showColorAndSizePicker());
+
+        if (drawToolbar != null) drawToolbar.setVisibility(View.VISIBLE);
         updateToolUi();
     }
 
@@ -153,50 +187,129 @@ public class PdfEditorActivity extends AppCompatActivity {
             PdfAnnotationStore store = new PdfAnnotationStore(this, noteId);
             adapter = new PdfPageAdapter(this, pdfRenderer, store);
 
-            recyclerPdf.setAdapter(adapter);
+            if (recyclerPdf != null) recyclerPdf.setAdapter(adapter);
 
-            // Apply trạng thái hiện tại cho adapter ngay khi mở
+            // apply state
             adapter.setReadOnly(isReadOnly);
-
-            // Apply size mặc định cho tool (tránh trường hợp user mở dialog trước khi chạm page)
-            // Lưu ý: adapter chỉ apply vào activeDrawingView, nên user cần chạm vào page trước để active.
-            // Nhưng set này không gây lỗi.
             adapter.setPenStrokeWidth(penSize);
             adapter.setMarkerStrokeWidth(markerSize);
 
-        } catch (IOException e) {
-            Toast.makeText(this, "Mở PDF lỗi", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Mở PDF lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             finish();
         }
     }
 
     private void toggleReadOnly() {
         isReadOnly = !isReadOnly;
-
         if (btnReadOnly != null) btnReadOnly.setSelected(isReadOnly);
 
         if (adapter != null) adapter.setReadOnly(isReadOnly);
+        if (drawToolbar != null) drawToolbar.setVisibility(isReadOnly ? View.GONE : View.VISIBLE);
 
-        if (drawToolbar != null) {
-            drawToolbar.setVisibility(isReadOnly ? View.GONE : View.VISIBLE);
-        }
+        if (edtTitle != null) edtTitle.setEnabled(!isReadOnly);
     }
 
-    // ===== Dialog: Color + Size (Pen/Marker riêng) =====
+    // ================== TITLE ==================
+    private void setupTitleEditing() {
+        if (edtTitle == null) return;
+
+        edtTitle.setEnabled(!isReadOnly);
+
+        edtTitle.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (suppressTitleWatcher || isReadOnly) return;
+
+                String title = s.toString().trim();
+                if (title.isEmpty() || title.equals(lastSavedTitle)) return;
+
+                if (titleSaveRunnable != null)
+                    titleHandler.removeCallbacks(titleSaveRunnable);
+
+                titleSaveRunnable = () -> saveTitleToFirestore(title);
+                titleHandler.postDelayed(titleSaveRunnable, 500); // debounce
+            }
+        });
+    }
+
+
+    private void showRenameTitleDialog() {
+        final EditText input = new EditText(this);
+        input.setHint("Nhập tiêu đề");
+        input.setText(txtTitle != null ? txtTitle.getText().toString() : "");
+
+        new AlertDialog.Builder(this)
+                .setTitle("Đổi tiêu đề")
+                .setView(input)
+                .setPositiveButton("Lưu", (d, w) -> {
+                    String t = input.getText().toString().trim();
+                    if (!t.isEmpty()) saveTitleToFirestore(t);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void saveTitleFromEditText() {
+        if (edtTitle == null) return;
+        String title = edtTitle.getText().toString().trim();
+        if (!title.isEmpty()) saveTitleToFirestore(title);
+    }
+
+    private void saveTitleToFirestore(String title) {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null || noteId == null) return;
+
+        lastSavedTitle = title;
+
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .collection("notes")
+                .document(noteId)
+                .update(
+                        "title", title,
+                        "updatedAt", Timestamp.now()
+                );
+    }
+
+
+
+    private void listenNoteTitle() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null || noteId == null) return;
+
+        noteListener = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .collection("notes")
+                .document(noteId)
+                .addSnapshotListener((snap, err) -> {
+                    if (err != null || snap == null || !snap.exists()) return;
+
+                    String title = snap.getString("title");
+                    if (title == null) title = "PDF";
+
+                    lastSavedTitle = title;
+
+                    if (edtTitle != null && !edtTitle.hasFocus()) {
+                        suppressTitleWatcher = true;
+                        edtTitle.setText(title);
+                        edtTitle.setSelection(title.length());
+                        suppressTitleWatcher = false;
+                    }
+                });
+    }
+
+
+    // ================== COLOR + SIZE ==================
     private void showColorAndSizePicker() {
-
-        // Nếu đang eraser thì vẫn cho chọn màu/size, nhưng size chỉ áp dụng cho pen/marker.
-        // UX: nếu eraser đang active, mình vẫn cho chỉnh pen/marker theo last tool.
-        // Bạn muốn khóa khi eraser thì mình sửa dễ.
-
         final int[] colors = {
-                Color.BLACK,
-                Color.RED,
-                Color.BLUE,
-                Color.GREEN,
-                Color.YELLOW,
-                Color.MAGENTA,
-                Color.CYAN
+                Color.BLACK, Color.RED, Color.BLUE, Color.GREEN,
+                Color.YELLOW, Color.MAGENTA, Color.CYAN
         };
 
         final String[] names = {
@@ -205,32 +318,26 @@ public class PdfEditorActivity extends AppCompatActivity {
         };
 
         View v = getLayoutInflater().inflate(R.layout.dialog_color_size, null);
-
         TextView txtSizeLabel = v.findViewById(R.id.txtSizeLabel);
         SeekBar seekSize = v.findViewById(R.id.seekSize);
 
-        // Set range + progress theo tool hiện tại
         int min, max, current;
         if (currentTool == DrawingView.Tool.MARKER) {
             min = 10; max = 40; current = markerSize;
             if (txtSizeLabel != null) txtSizeLabel.setText("Độ to Marker: " + markerSize);
         } else {
-            // default PEN cho cả trường hợp ERASER (để user chỉnh pen chuẩn bị)
             min = 2; max = 12; current = penSize;
             if (txtSizeLabel != null) txtSizeLabel.setText("Độ to Pen: " + penSize);
         }
 
-        // SeekBar không hỗ trợ min chuẩn trên mọi API, ta dùng max-min & offset
         if (seekSize != null) {
             seekSize.setMax(max - min);
-            seekSize.setProgress(Math.max(0, Math.min(current, max)) - min);
+            seekSize.setProgress(Math.max(0, current - min));
 
             seekSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
+                @Override public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
                     if (!fromUser) return;
-
-                    int value = min + progress;
+                    int value = min + p;
 
                     if (currentTool == DrawingView.Tool.MARKER) {
                         markerSize = value;
@@ -242,7 +349,6 @@ public class PdfEditorActivity extends AppCompatActivity {
                         if (adapter != null) adapter.setPenStrokeWidth(penSize);
                     }
                 }
-
                 @Override public void onStartTrackingTouch(SeekBar sb) {}
                 @Override public void onStopTrackingTouch(SeekBar sb) {}
             });
@@ -251,44 +357,72 @@ public class PdfEditorActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Màu & độ to")
                 .setItems(names, (d, which) -> {
-                    if (adapter != null) {
-                        adapter.setColor(colors[which]);
-                    }
-                    // Sau khi chọn màu, dialog items sẽ tự đóng.
-                    // Nếu bạn muốn dialog giữ lại để chỉnh size thì phải làm custom list,
-                    // hiện tại theo kiểu đơn giản nhất để bạn chạy ổn định trước.
+                    if (adapter != null) adapter.setColor(colors[which]);
                 })
                 .setView(v)
                 .setNegativeButton("Đóng", null)
                 .show();
     }
 
-    // ===== UI tool highlight đơn giản (đẹp hơn bạn hiện tại) =====
+    // ================== TOOL UI ==================
     private void updateToolUi() {
-        if (btnPen == null || btnMarker == null || btnEraser == null) return;
+        ImageButton[] buttons = {
+                btnPen, btnMarker, btnEraser
+        };
 
-        float off = 0.4f;
-        float on = 1f;
-
-        btnPen.setAlpha(off);
-        btnMarker.setAlpha(off);
-        btnEraser.setAlpha(off);
-
-        if (currentTool == DrawingView.Tool.MARKER) {
-            btnMarker.setAlpha(on);
-        } else if (currentTool == DrawingView.Tool.ERASER) {
-            btnEraser.setAlpha(on);
-        } else {
-            btnPen.setAlpha(on);
+        // reset all
+        for (ImageButton b : buttons) {
+            if (b == null) continue;
+            b.setBackgroundResource(R.drawable.bg_toolbar_item);
+            b.setAlpha(0.6f);
         }
+
+        // active
+        ImageButton active = null;
+        switch (currentTool) {
+            case MARKER: active = btnMarker; break;
+            case ERASER: active = btnEraser; break;
+            default: active = btnPen; break;
+        }
+
+        if (active != null) {
+            active.setBackgroundResource(R.drawable.bg_tool_button_active);
+            active.setAlpha(1f);
+        }
+    }
+
+
+    private int dp(int value) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                value,
+                getResources().getDisplayMetrics()
+        );
     }
 
     @Override
     protected void onDestroy() {
+        if (noteListener != null) {
+            noteListener.remove();
+            noteListener = null;
+        }
+
         try {
             if (pdfRenderer != null) pdfRenderer.close();
             if (fileDescriptor != null) fileDescriptor.close();
         } catch (IOException ignored) {}
+
         super.onDestroy();
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (edtTitle != null) {
+            String title = edtTitle.getText().toString().trim();
+            if (!title.isEmpty()) saveTitleToFirestore(title);
+        }
+    }
+
 }

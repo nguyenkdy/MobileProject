@@ -429,7 +429,15 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                     && safeEq(o.pdfPath, n.pdfPath)
                     && o.isPinned == n.isPinned
                     && o.pinnedAt == n.pinnedAt
-                    && o.selected == n.selected;
+                    && o.selected == n.selected
+                    && safeEqTime(o.updatedAt, n.updatedAt); // 🔥 BẮT BUỘC;
+
+        }
+
+        private boolean safeEqTime(Timestamp a, Timestamp b) {
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
+            return a.toDate().getTime() == b.toDate().getTime();
         }
 
         private boolean safeEq(String a, String b) {

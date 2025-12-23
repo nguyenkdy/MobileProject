@@ -2,26 +2,27 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="6dp"
-    android:paddingHorizontal="10dp"
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="12dp"
     android:background="@android:color/transparent">
 
-    <!-- BOT MESSAGE -->
+    <!-- ================= BOT MESSAGE ================= -->
     <LinearLayout
         android:id="@+id/rowBot"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="start"
-        android:paddingEnd="48dp">
+        android:paddingEnd="56dp">
 
         <!-- BOT AVATAR -->
         <ImageView
             android:id="@+id/imgBot"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginEnd="8dp"
-            android:src="@drawable/ic_chatbot"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_chatbot_new"
             android:background="@drawable/bg_avatar_circle"
             android:scaleType="centerCrop" />
 
@@ -32,20 +33,21 @@
             android:layout_height="wrap_content"
             android:maxWidth="260dp"
             android:background="@drawable/bg_chat_bubble_bot"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp"
-            android:textColor="#222222"
-            android:textSize="14sp" />
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp"
+            android:textColor="#1E1E1E"
+            android:textSize="14sp"
+            android:lineSpacingExtra="2dp" />
     </LinearLayout>
 
-    <!-- USER MESSAGE -->
+    <!-- ================= USER MESSAGE ================= -->
     <LinearLayout
         android:id="@+id/rowUser"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="end"
-        android:paddingStart="48dp"
+        android:paddingStart="56dp"
         android:visibility="gone">
 
         <TextView
@@ -54,10 +56,11 @@
             android:layout_height="wrap_content"
             android:maxWidth="260dp"
             android:background="@drawable/bg_chat_bubble_user"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp"
             android:textColor="@android:color/white"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:lineSpacingExtra="2dp" />
     </LinearLayout>
 
 </FrameLayout>

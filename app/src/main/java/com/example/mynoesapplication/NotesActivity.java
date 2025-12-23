@@ -166,6 +166,10 @@ public class NotesActivity extends AppCompatActivity {
             txtFolderTitle.setText(folder.name);
             loadNotesInFolder(folder.id);
         });
+        foldersAdapter.setOnFolderPinChangedListener(() -> {
+            sortFolders();
+            foldersAdapter.notifyDataSetChanged();
+        });
         foldersAdapter.setUid(uid);
         recyclerNotes.setAdapter(notesAdapter);
 
@@ -324,35 +328,60 @@ public class NotesActivity extends AppCompatActivity {
 
         recyclerNotes.setAdapter(foldersAdapter);
         updateLeftButton();
+
+        // stop previous listeners (notes + folders)
         removeListeners();
 
-        // 🔥 đang load folders
+        // nếu chưa login / uid null thì out an toàn
+        if (uid == null || uid.trim().isEmpty()) {
+            isLoadingFolders = false;
+            folderList.clear();
+            foldersAdapter.notifyDataSetChanged();
+            updateEmptyState();
+            return;
+        }
+
+        // đang load
         isLoadingFolders = true;
 
+        // clear UI trước
         folderList.clear();
         foldersAdapter.notifyDataSetChanged();
 
-        // 🔥 không cho hiện empty khi đang load
+        // không hiện empty khi đang load
         if (layoutEmpty != null) layoutEmpty.setVisibility(View.GONE);
-        recyclerNotes.setVisibility(View.VISIBLE);
+        if (recyclerNotes != null) recyclerNotes.setVisibility(View.VISIBLE);
 
-        db.collection("users")
+        // ✅ realtime listener cho folders của mình
+        foldersListener = db.collection("users")
                 .document(uid)
                 .collection("folders")
                 .whereEqualTo("deleted", false)
-                .get()
-                .addOnSuccessListener(value -> {
+                .addSnapshotListener(this, (snapshot, error) -> {
+                    if (error != null) {
+                        isLoadingFolders = false;
+                        Toast.makeText(this, "Load folders lỗi: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        updateEmptyState();
+                        return;
+                    }
+                    if (snapshot == null) {
+                        isLoadingFolders = false;
+                        updateEmptyState();
+                        return;
+                    }
 
-                    folderList.clear();
-                    for (DocumentSnapshot doc : value.getDocuments()) {
+                    // 1) Build list folders OWNED (realtime)
+                    List<Folder> temp = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         Folder f = doc.toObject(Folder.class);
                         if (f == null) f = new Folder();
                         f.id = doc.getId();
-                        f.ownerId = null;
-                        folderList.add(f);
+                        f.ownerId = null; // owned folder
+                        temp.add(f);
                     }
 
-                    // load shared folders
+                    // 2) Load joinedFolders (shared) - one-shot, failure tolerant
                     db.collection("users")
                             .document(uid)
                             .collection("joinedFolders")
@@ -376,19 +405,38 @@ public class NotesActivity extends AppCompatActivity {
                                     shared.roomCode = jd.getId();
                                     shared.originalFolderId = ownerFolderId;
                                     shared.deleted = false;
+                                    shared.pinned = false; // shared không pin ở phía user này
 
-                                    folderList.add(shared);
+                                    // createdAt có thể null, sortFolders đã handle null
+                                    temp.add(shared);
                                 }
 
-                                // ✅ LOAD XONG TOÀN BỘ
-                                finishLoadFolders();
+                                // 3) apply -> sort -> notify
+                                folderList.clear();
+                                folderList.addAll(temp);
+
+                                // nếu đang search, update fullFolderList để filter không bị lệch
+                                if (isSearchMode) {
+                                    fullFolderList.clear();
+                                    fullFolderList.addAll(folderList);
+                                    filterFoldersByName(edtSearch != null ? edtSearch.getText().toString() : "");
+                                } else {
+                                    finishLoadFolders(); // sortFolders + notify + updateEmptyState + isLoadingFolders=false
+                                }
                             })
-                            .addOnFailureListener(e -> finishLoadFolders());
-                })
-                .addOnFailureListener(e -> {
-                    isLoadingFolders = false;
-                    Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    updateEmptyState();
+                            .addOnFailureListener(e -> {
+                                // joinedFolders fail vẫn phải show owned folders
+                                folderList.clear();
+                                folderList.addAll(temp);
+
+                                if (isSearchMode) {
+                                    fullFolderList.clear();
+                                    fullFolderList.addAll(folderList);
+                                    filterFoldersByName(edtSearch != null ? edtSearch.getText().toString() : "");
+                                } else {
+                                    finishLoadFolders();
+                                }
+                            });
                 });
     }
 
@@ -404,12 +452,30 @@ public class NotesActivity extends AppCompatActivity {
 
     private void sortFolders() {
         Collections.sort(folderList, (a, b) -> {
-            if (a.createdAt == null && b.createdAt == null) return 0;
-            if (a.createdAt == null) return 1;
-            if (b.createdAt == null) return -1;
-            return a.createdAt.compareTo(b.createdAt);
+
+            // 1️⃣ Folder của mình lên trước folder chia sẻ
+            boolean aShared = a.ownerId != null && !a.ownerId.equals(uid);
+            boolean bShared = b.ownerId != null && !b.ownerId.equals(uid);
+
+            if (aShared && !bShared) return 1;
+            if (!aShared && bShared) return -1;
+
+            // 2️⃣ PINNED lên đầu (chỉ áp dụng cho folder của mình)
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+
+            // 3️⃣ Cùng pinned → sort theo createdAt (mới trước)
+            if (a.createdAt != null && b.createdAt != null) {
+                return b.createdAt.compareTo(a.createdAt);
+            }
+
+            if (a.createdAt == null && b.createdAt != null) return 1;
+            if (a.createdAt != null && b.createdAt == null) return -1;
+
+            return 0;
         });
     }
+
 
     // ==================================================
     // LOAD NOTES IN FOLDER
@@ -445,48 +511,39 @@ public class NotesActivity extends AppCompatActivity {
     // APPLY NOTES SNAPSHOT
     // ==================================================
     private void applyNotesSnapshot(QuerySnapshot value) {
-        noteList.clear();
+        List<Note> newList = new ArrayList<>();
 
         for (DocumentSnapshot doc : value.getDocuments()) {
             Note n = doc.toObject(Note.class);
             if (n != null) {
                 n.id = doc.getId();
-                noteList.add(n);
+                newList.add(n);
             }
         }
 
-        Collections.sort(noteList, (a, b) -> {
+        // sort giống adapter
+        Collections.sort(newList, (a, b) -> {
             boolean ap = a.isPinned;
             boolean bp = b.isPinned;
             if (ap && !bp) return -1;
             if (!ap && bp) return 1;
 
             if (ap && bp) {
-                long at = a.pinnedAt;
-                long bt = b.pinnedAt;
-                int cmp = Long.compare(bt, at);
-                if (cmp != 0) return cmp;
-
-                long au = (a.updatedAt != null) ? a.updatedAt.toDate().getTime() : 0L;
-                long bu = (b.updatedAt != null) ? b.updatedAt.toDate().getTime() : 0L;
-                return Long.compare(bu, au);
+                return Long.compare(b.pinnedAt, a.pinnedAt);
             }
 
-            long au = (a.updatedAt != null) ? a.updatedAt.toDate().getTime() : 0L;
-            long bu = (b.updatedAt != null) ? b.updatedAt.toDate().getTime() : 0L;
+            long au = a.updatedAt != null ? a.updatedAt.toDate().getTime() : 0;
+            long bu = b.updatedAt != null ? b.updatedAt.toDate().getTime() : 0;
             return Long.compare(bu, au);
         });
 
-        // nếu đang search -> cập nhật full list để filter không bị lệch
-        if (isSearchMode) {
-            fullNoteList.clear();
-            fullNoteList.addAll(noteList);
-            filterNotesByTitle(edtSearch != null ? edtSearch.getText().toString() : "");
-        } else {
-            notesAdapter.notifyDataSetChanged();
-            updateEmptyState();
-        }
+        // 🔥 DUY NHẤT DÒNG NÀY
+        notesAdapter.replaceAllNotes(newList);
+
+        updateEmptyState();
     }
+
+
 
     private void updateEmptyState() {
         if (layoutEmpty == null || recyclerNotes == null) return;

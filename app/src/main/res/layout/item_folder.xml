@@ -47,6 +47,25 @@
             android:maxLines="1"
             android:ellipsize="end"/>
 
+        <TextView
+            android:id="@+id/txtFolderTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12/09/2025 14:32"
+            android:textSize="12sp"
+            android:textColor="#888888"
+            android:layout_marginTop="2dp"/>
+
+        <ImageView
+            android:id="@+id/imgPinned"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:src="@drawable/ic_pin_card"
+            android:scaleType="centerInside"
+            android:visibility="gone"/>
+
+
         <!-- OPTION BUTTON -->
         <ImageButton
             android:id="@+id/btnFolderOption"

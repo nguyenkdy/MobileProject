@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF"
-    android:layout_marginTop="30dp">
+    android:background="#FFFFFF">
 
     <!-- ================= TOP BAR ================= -->
     <LinearLayout
@@ -20,22 +20,29 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="30dp"
-            android:layout_height="20dp"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_back"
-            android:scaleType="centerInside"/>
+            android:scaleType="centerInside" />
 
-        <TextView
-            android:id="@+id/txtTitle"
+        <!-- ✏️ EDITABLE TITLE (GIỐNG NOTE) -->
+        <EditText
+            android:id="@+id/edtTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:hint="PDF"
             android:text="PDF"
-            android:textStyle="bold"
             android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="#1E1E1E"
-            android:layout_marginStart="8dp"/>
+            android:textCursorDrawable="@null"
+            android:background="@null"
+            android:singleLine="true"
+            android:imeOptions="actionDone"
+            android:paddingVertical="6dp"
+            android:layout_marginStart="8dp" />
 
         <!-- 🔒 READ ONLY BUTTON -->
         <ImageButton
@@ -44,9 +51,8 @@
             android:layout_height="36dp"
             android:background="@drawable/bg_read_only"
             android:src="@drawable/ic_read_only"
-            android:scaleType="centerInside"/>
+            android:scaleType="centerInside" />
     </LinearLayout>
-
 
     <!-- ================= PDF LIST ================= -->
     <androidx.recyclerview.widget.RecyclerView
@@ -55,49 +61,91 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:overScrollMode="never"
-        android:background="#FFFFFF"/>
+        android:background="#FFFFFF" />
 
     <!-- ================= DRAW TOOLBAR ================= -->
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/drawToolbar"
         android:layout_width="match_parent"
         android:layout_height="64dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:padding="8dp"
+        android:paddingHorizontal="16dp"
         android:background="@drawable/bg_toolbar_rounded"
         android:elevation="12dp">
 
+        <!-- PEN -->
         <ImageButton
             android:id="@+id/btnPen"
-            style="@style/ToolbarButton"
-            android:src="@drawable/ic_pen"/>
+            style="@style/ToolbarButtonModern"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_pen"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btnMarker"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHorizontal_chainStyle="spread" />
 
+        <!-- MARKER -->
         <ImageButton
             android:id="@+id/btnMarker"
-            style="@style/ToolbarButton"
-            android:src="@drawable/ic_marker"/>
+            style="@style/ToolbarButtonModern"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_marker"
+            app:layout_constraintStart_toEndOf="@id/btnPen"
+            app:layout_constraintEnd_toStartOf="@id/btnEraser"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- ERASER -->
         <ImageButton
             android:id="@+id/btnEraser"
-            style="@style/ToolbarButton"
-            android:src="@drawable/ic_eraser"/>
+            style="@style/ToolbarButtonModern"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_eraser"
+            app:layout_constraintStart_toEndOf="@id/btnMarker"
+            app:layout_constraintEnd_toStartOf="@id/btnUndo"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- UNDO -->
         <ImageButton
             android:id="@+id/btnUndo"
-            style="@style/ToolbarButton"
-            android:src="@drawable/ic_undo"/>
+            style="@style/ToolbarButtonModern"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_undo"
+            app:layout_constraintStart_toEndOf="@id/btnEraser"
+            app:layout_constraintEnd_toStartOf="@id/btnRedo"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- REDO -->
         <ImageButton
             android:id="@+id/btnRedo"
-            style="@style/ToolbarButton"
-            android:src="@drawable/ic_redo"/>
+            style="@style/ToolbarButtonModern"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_redo"
+            app:layout_constraintStart_toEndOf="@id/btnUndo"
+            app:layout_constraintEnd_toStartOf="@id/btnColor"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- COLOR -->
         <ImageButton
             android:id="@+id/btnColor"
-            style="@style/ToolbarButton"
-            android:src="@drawable/ic_palette"/>
-    </LinearLayout>
+            style="@style/ToolbarButtonModern"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_palette"
+            app:layout_constraintStart_toEndOf="@id/btnRedo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 
 </LinearLayout>

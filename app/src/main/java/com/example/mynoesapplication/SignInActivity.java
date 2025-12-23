@@ -25,6 +25,8 @@ public class SignInActivity extends AppCompatActivity {
     TextView txtGoToSignUp;
     CheckBox checkRemember;
 
+    TextView txtForgotPassword;
+
     FirebaseAuth auth;
     boolean isLoggingIn = false;
 
@@ -41,6 +43,43 @@ public class SignInActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         txtGoToSignUp = findViewById(R.id.txtGoToSignUp);
         checkRemember = findViewById(R.id.checkRemember);
+        txtForgotPassword = findViewById(R.id.txtForgotPassword);
+
+        txtForgotPassword.setOnClickListener(v -> {
+
+            String email = edtEmail.getText().toString().trim();
+
+            if (email.isEmpty()) {
+                Toast.makeText(
+                        this,
+                        "Vui lòng nhập email để khôi phục mật khẩu",
+                        Toast.LENGTH_LONG
+                ).show();
+                edtEmail.requestFocus();
+                return;
+            }
+
+            auth.sendPasswordResetEmail(email)
+                    .addOnCompleteListener(task -> {
+
+                        if (task.isSuccessful()) {
+                            Toast.makeText(
+                                    this,
+                                    "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        } else {
+                            Toast.makeText(
+                                    this,
+                                    task.getException() != null
+                                            ? task.getException().getMessage()
+                                            : "Không thể gửi email",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        }
+                    });
+        });
+
 
         SharedPreferences pref = getSharedPreferences("MyNoteApp", MODE_PRIVATE);
 
@@ -56,10 +95,17 @@ public class SignInActivity extends AppCompatActivity {
         Log.d(TAG, "remember=" + remember + ", user=" + (currentUser != null));
 
         if (remember && currentUser != null) {
-            Log.d(TAG, "AUTO LOGIN -> NotesActivity");
-            startActivity(new Intent(this, NotesActivity.class));
-            finish();
-            return;
+
+            if (currentUser.isEmailVerified()) {
+                Log.d(TAG, "AUTO LOGIN VERIFIED -> NotesActivity");
+                startActivity(new Intent(this, NotesActivity.class));
+                finish();
+                return;
+            } else {
+                // ❌ chưa verify → logout
+                auth.signOut();
+                Log.d(TAG, "AUTO LOGIN BLOCKED (email not verified)");
+            }
         }
 
         // ===== Go to SignUp =====
@@ -100,19 +146,40 @@ public class SignInActivity extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
 
+                            FirebaseUser user = auth.getCurrentUser();
+
+                            if (user == null) {
+                                Toast.makeText(this, "Lỗi đăng nhập", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            // ❌ CHƯA VERIFY EMAIL
+                            if (!user.isEmailVerified()) {
+
+                                Toast.makeText(
+                                        this,
+                                        "Email chưa được xác nhận. Vui lòng kiểm tra hộp thư.",
+                                        Toast.LENGTH_LONG
+                                ).show();
+
+                                auth.signOut();
+                                return;
+                            }
+
+                            // ✅ ĐÃ VERIFY → SAVE REMEMBER
                             SharedPreferences.Editor editor = pref.edit();
                             editor.putString("saved_email", email);
                             editor.putString("saved_pass", pass);
                             editor.putBoolean("remember", checkRemember.isChecked());
                             editor.apply();
 
-                            Log.d(TAG, "LOGIN OK -> NotesActivity");
+                            Log.d(TAG, "LOGIN OK (VERIFIED) -> NotesActivity");
 
                             startActivity(new Intent(this, NotesActivity.class));
                             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
                             finish();
-
-                        } else {
+                        }
+                        else {
                             String msg = "Login failed";
                             if (task.getException() != null &&
                                     task.getException().getMessage() != null) {

@@ -106,14 +106,43 @@ public class SignUpActivity extends AppCompatActivity {
                     btnSignUp.setEnabled(true);
 
                     if (task.isSuccessful()) {
-                        Toast.makeText(this, "Tạo tài khoản thành công", Toast.LENGTH_SHORT).show();
 
-                        startActivity(new Intent(SignUpActivity.this, SignInActivity.class));
-                        overridePendingTransition(
-                                R.anim.slide_in_left,
-                                R.anim.slide_out_right
-                        );
-                        finish();
+                        if (auth.getCurrentUser() != null) {
+
+                            auth.getCurrentUser()
+                                    .sendEmailVerification()
+                                    .addOnCompleteListener(verifyTask -> {
+
+                                        if (verifyTask.isSuccessful()) {
+
+                                            Toast.makeText(
+                                                    this,
+                                                    "Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.",
+                                                    Toast.LENGTH_LONG
+                                            ).show();
+
+                                            // ❗ Bắt buộc logout để user không dùng app khi chưa verify
+                                            auth.signOut();
+
+                                            startActivity(new Intent(
+                                                    SignUpActivity.this,
+                                                    SignInActivity.class
+                                            ));
+                                            overridePendingTransition(
+                                                    R.anim.slide_in_left,
+                                                    R.anim.slide_out_right
+                                            );
+                                            finish();
+
+                                        } else {
+                                            Toast.makeText(
+                                                    this,
+                                                    "Không thể gửi email xác nhận",
+                                                    Toast.LENGTH_LONG
+                                            ).show();
+                                        }
+                                    });
+                        }
 
                     } else {
                         Toast.makeText(
@@ -125,5 +154,6 @@ public class SignUpActivity extends AppCompatActivity {
                         ).show();
                     }
                 });
+
     }
 }

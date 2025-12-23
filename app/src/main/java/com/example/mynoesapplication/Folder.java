@@ -6,12 +6,12 @@ public class Folder {
 
     public String id;
     public String name;
-    public boolean pinned;
+    public boolean pinned = false;      // ⭐ default
     public boolean selected = false;
     public Timestamp createdAt;
 
     // 🔥 THÊM 2 FIELD NÀY
-    public boolean deleted;
+    public boolean deleted = false;     // ⭐ default
     public Timestamp deletedAt;
 
     // ⚠️ BẮT BUỘC constructor rỗng cho Firestore

@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
@@ -83,6 +84,16 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
         }
         h.txtFolderName.setText(displayName);
 
+        // ===== CREATED AT =====
+        if (f.createdAt != null) {
+            java.text.SimpleDateFormat sdf =
+                    new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
+            h.txtFolderTime.setText(sdf.format(f.createdAt.toDate()));
+            h.txtFolderTime.setVisibility(View.VISIBLE);
+        } else {
+            h.txtFolderTime.setVisibility(View.GONE);
+        }
+
         // ===== EDIT MODE UI =====
         h.chkSelect.setVisibility((isEditMode && !isSharedReadOnly) ? View.VISIBLE : View.GONE);
         h.btnOption.setVisibility(isEditMode ? View.GONE : (isSharedReadOnly ? View.GONE : View.VISIBLE));
@@ -125,6 +136,17 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                         if (listener != null) listener.onFolderClick(f);
                     });
         });
+
+        // ===== PINNED UI =====
+        if (f.pinned) {
+            h.itemView.setBackgroundResource(R.drawable.bg_folder_pinned);
+            if (h.imgPinned != null) h.imgPinned.setVisibility(View.VISIBLE);
+        } else {
+            h.itemView.setBackgroundResource(R.drawable.bg_folder_normal);
+            if (h.imgPinned != null) h.imgPinned.setVisibility(View.GONE);
+        }
+
+
 
         // ===== OPTION MENU =====
         h.btnOption.setOnClickListener(v -> showFolderPopup(v, f));
@@ -302,12 +324,23 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
     private void togglePin(Folder folder) {
         boolean newValue = !folder.pinned;
 
+        // 1️⃣ update local ngay
+        folder.pinned = newValue;
+
+        // 2️⃣ báo cho Activity sort lại
+        if (pinChangedListener != null) {
+            pinChangedListener.onFolderPinChanged();
+        }
+
+        // 3️⃣ sync Firestore
         db.collection("users")
                 .document(uid)
                 .collection("folders")
                 .document(folder.id)
                 .update("pinned", newValue);
     }
+
+
 
     // ==================================================
     // MOVE FOLDER TO TRASH (1 FOLDER)
@@ -436,12 +469,21 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
         TextView txtFolderName;
         ImageButton btnOption;
         CheckBox chkSelect;
+        ImageView imgPinned; // ⭐ ADD
+
+        TextView txtFolderTime;   // ⭐ ADD
+
+
 
         FolderViewHolder(@NonNull View v) {
             super(v);
             txtFolderName = v.findViewById(R.id.txtFolderName);
             btnOption = v.findViewById(R.id.btnFolderOption);
             chkSelect = v.findViewById(R.id.chkSelectFolder);
+            imgPinned = v.findViewById(R.id.imgPinned); // ⭐ ADD
+            txtFolderTime = v.findViewById(R.id.txtFolderTime); // ⭐ ADD
+
+
         }
     }
 
@@ -487,6 +529,15 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                 });
     }
 
+    public interface OnFolderPinChangedListener {
+        void onFolderPinChanged();
+    }
+
+    private OnFolderPinChangedListener pinChangedListener;
+
+    public void setOnFolderPinChangedListener(OnFolderPinChangedListener l) {
+        this.pinChangedListener = l;
+    }
 
     private void cleanupStaleJoinedFolders() {
         if (uid == null) return;
