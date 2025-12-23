@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class AiApiService {
 
     private static final String BASE_URL = "https://generativelanguage.googleapis.com/";
-    private static final String API_KEY = "AIzaSyDzp6JpRLazeEqbjuQKZ3a2HJEDF08Tnow";
+    private static final String API_KEY = "api-key";
 
     public interface Api {
         // existing text-only endpoint
