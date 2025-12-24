@@ -1,4 +1,5 @@
 package com.example.mynoesapplication;
+import com.example.mynoesapplication.Data.ScreenMode;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -31,6 +32,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mynoesapplication.Fragment.FolderCreateFragment;
 import com.example.mynoesapplication.Fragment.FolderSharingFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.Timestamp;
@@ -95,7 +97,6 @@ public class NotesActivity extends AppCompatActivity {
     private static final String ROOT = "ROOT";
     String currentFolderId = ROOT;
 
-    private enum ScreenMode { NOTES, FOLDERS }
     private ScreenMode currentMode = ScreenMode.NOTES;
 
     boolean isEditMode = false;
@@ -583,7 +584,7 @@ public class NotesActivity extends AppCompatActivity {
 
         view.findViewById(R.id.optCreateFolder).setOnClickListener(v -> {
             dialog.dismiss();
-            showCreateFolderDialog();
+            showCreateFolderFragment();
         });
 
         view.findViewById(R.id.optCreatePdf).setOnClickListener(v -> {
@@ -620,36 +621,9 @@ public class NotesActivity extends AppCompatActivity {
                 );
     }
 
-    private void showCreateFolderDialog() {
-        AlertDialog.Builder b = new AlertDialog.Builder(this);
-        b.setTitle("Tạo thư mục");
-
-        EditText input = new EditText(this);
-        input.setHint("Tên thư mục");
-        b.setView(input);
-
-        b.setPositiveButton("Tạo", (d, w) -> {
-            String name = input.getText().toString().trim();
-            if (name.isEmpty()) return;
-
-            Map<String, Object> folder = new HashMap<>();
-            folder.put("name", name);
-            folder.put("createdAt", Timestamp.now());
-            folder.put("deleted", false);
-            folder.put("deletedAt", null);
-
-            db.collection("users").document(uid).collection("folders")
-                    .add(folder)
-                    .addOnSuccessListener(doc -> {
-                        if (currentMode == ScreenMode.FOLDERS) loadFolders();
-                    })
-                    .addOnFailureListener(e ->
-                            Toast.makeText(this, "Tạo thư mục lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                    );
-        });
-
-        b.setNegativeButton("Hủy", null);
-        b.show();
+    private void showCreateFolderFragment() {
+        FolderCreateFragment fragment = new FolderCreateFragment(uid, currentMode);
+        fragment.show(getSupportFragmentManager(), "folder_create_fragment");
     }
 
     private void refreshCurrentListAfterCreate() {
