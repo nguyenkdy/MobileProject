@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mynoesapplication.Fragment.FolderSharingFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -695,13 +696,18 @@ public class NotesActivity extends AppCompatActivity {
 
         view.findViewById(R.id.optShared).setOnClickListener(v -> {
             popup.dismiss();
-
             hideSearchBar();
-            if (isEditMode) toggleEditMode();
 
-            Intent intent = new Intent(NotesActivity.this, FolderSharingActivity.class);
-            startActivity(intent);
+            FolderSharingFragment frag = FolderSharingFragment.newInstance(
+                    null, null, null,
+                    false, null
+            );
+            frag.show(getSupportFragmentManager(), "folder_sharing");
+
+            if (isEditMode) toggleEditMode();
         });
+
+
 
 
         view.findViewById(R.id.optFolders).setOnClickListener(v -> {

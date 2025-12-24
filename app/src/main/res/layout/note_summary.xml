@@ -4,53 +4,65 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Scrim to dim background and allow dismiss by tapping outside -->
     <View
         android:id="@+id/scrim"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#80000000" />
 
-    <!-- Right-side panel container -->
     <FrameLayout
         android:id="@+id/panel"
-        android:layout_width="320dp"
-        android:layout_height="match_parent"
+        android:layout_width="178dp"
+        android:layout_height="409dp"
         android:layout_gravity="end"
-        android:padding="16dp"
-        android:background="@drawable/bg_popup_note">
+        android:layout_marginTop="336dp"
+        android:background="@drawable/bg_popup_note"
+        android:padding="16dp">
 
-        <!-- Close button (top-right inside panel) -->
-        <ImageButton
-            android:id="@+id/btnClose"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="end|top"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Close"
-            android:scaleType="center"
-            android:padding="6dp"
-            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-        <!-- Progress loading -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tóm tắt nội dung"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="@android:color/black"/>
+
+            <View
+                android:layout_width="110dp"
+                android:layout_height="5dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="#ECEDFB"/>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="vertical">
+
+                <TextView
+                    android:id="@+id/txtSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingExtra="4dp"
+                    android:text=""
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+            </ScrollView>
+
+        </LinearLayout>
+
         <ProgressBar
             android:id="@+id/progressSummary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:visibility="gone" />
-
-        <!-- Summary text -->
-        <TextView
-            android:id="@+id/txtSummary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:layout_marginTop="56dp"
-            android:text=""
-            android:textSize="16sp"
-            android:textColor="@android:color/black"
-            android:lineSpacingExtra="4dp" />
 
     </FrameLayout>
 </FrameLayout>

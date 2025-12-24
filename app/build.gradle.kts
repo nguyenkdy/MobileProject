@@ -54,4 +54,7 @@ dependencies {
 // OkHttp
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+// groovy
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
 }
