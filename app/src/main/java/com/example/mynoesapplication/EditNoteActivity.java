@@ -476,36 +476,18 @@ public class EditNoteActivity extends AppCompatActivity {
     }
 
     private void showColorPicker() {
-
-        // chỉ cho pen / marker
+        // only for pen / marker
         if (currentTool != Tool.PEN && currentTool != Tool.MARKER) {
             Toast.makeText(this, "Chỉ áp dụng cho bút & marker", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        final int[] colors = {
-                Color.BLACK,
-                Color.BLUE,
-                Color.RED,
-                Color.GREEN,
-                Color.MAGENTA,
-                Color.CYAN,
-                Color.YELLOW,
-                Color.DKGRAY
-        };
-
-        String[] names = {
-                "Đen", "Xanh dương", "Đỏ", "Xanh lá",
-                "Tím", "Cyan", "Vàng", "Xám đậm"
-        };
-
-        new AlertDialog.Builder(this)
-                .setTitle("Chọn màu")
-                .setItems(names, (d, which) -> {
-                    selectedColor = colors[which];
-                    drawingView.setColor(selectedColor);
-                })
-                .show();
+        com.example.mynoesapplication.Fragment.ColorPickerFragment f = new com.example.mynoesapplication.Fragment.ColorPickerFragment();
+        f.setOnColorSelectedListener(color -> {
+            selectedColor = color;
+            if (drawingView != null) drawingView.setColor(selectedColor);
+        });
+        f.show(getSupportFragmentManager(), "color_picker");
     }
 
 
