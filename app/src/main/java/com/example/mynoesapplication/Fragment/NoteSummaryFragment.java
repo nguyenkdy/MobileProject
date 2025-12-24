@@ -46,13 +46,10 @@ public class NoteSummaryFragment extends Fragment {
         progress = v.findViewById(R.id.progressSummary);
         panel = v.findViewById(R.id.panel);
         scrim = v.findViewById(R.id.scrim);
-        btnClose = v.findViewById(R.id.btnClose);
-
         // start panel off-screen to the right
         panel.setTranslationX(1000f);
 
         // Close actions (button and scrim tap)
-        btnClose.setOnClickListener(view -> closeWithAnimation());
         scrim.setOnClickListener(view -> closeWithAnimation());
 
         return v;
