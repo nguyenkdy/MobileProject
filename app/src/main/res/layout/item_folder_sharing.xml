@@ -72,6 +72,18 @@
             android:layout_marginStart="12dp"
             android:layout_marginTop="6dp" />
 
+        <ImageButton
+            android:id="@+id/btnOption"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_options_note"
+            android:scaleType="centerInside"
+            android:contentDescription="Options"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
 

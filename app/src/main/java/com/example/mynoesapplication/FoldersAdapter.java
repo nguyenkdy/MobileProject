@@ -13,13 +13,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.mynoesapplication.Fragment.FolderSharingFragment;
-import com.example.mynoesapplication.Fragment.RoomFragment;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -227,7 +224,7 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                         android.widget.Toast.makeText(ctx, "Warning: failed to sync room metadata: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
                     });
 
-            openRoomFragment(ctx, uid, folder.id, folder.name, folder.roomCode, true);
+            openFolderSharingActivity(ctx, uid, folder.id, folder.name, folder.roomCode, true);
             return;
         }
 
@@ -260,44 +257,18 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                             .document(roomCode)
                             .set(roomDoc)
                             .addOnSuccessListener(v -> {
-                                openRoomFragment(ctx, uid, folder.id, folder.name, roomCode, true);
+                                openFolderSharingActivity(ctx, uid, folder.id, folder.name, roomCode, true);
                             })
                             .addOnFailureListener(e -> {
                                 // still open sharing view even if rooms write failed
                                 android.widget.Toast.makeText(ctx, "Room created but rooms index write failed: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
-                                openRoomFragment(ctx, uid, folder.id, folder.name, roomCode, true);
+                                openFolderSharingActivity(ctx, uid, folder.id, folder.name, roomCode, true);
                             });
                 })
                 .addOnFailureListener(e -> android.widget.Toast.makeText(ctx, "Create room failed: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show());
     }
-    private void openRoomFragment(
-            Context ctx,
-            String ownerUid,
-            String folderId,
-            String folderName,
-            String roomCode,
-            boolean isOwner
-    ) {
-        if (!(ctx instanceof androidx.fragment.app.FragmentActivity)) {
-            Toast.makeText(ctx, "Cannot open sharing view", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    private void openFolderSharingActivity(Context ctx, String ownerUid, String folderId, String folderName, String roomCode, boolean isOwner) {
 
-        androidx.fragment.app.FragmentActivity activity =
-                (androidx.fragment.app.FragmentActivity) ctx;
-
-        RoomFragment fragment = RoomFragment.newInstance(
-                ownerUid,
-                folderId,
-                roomCode,
-                isOwner,
-                folderName
-        );
-
-        fragment.show(
-                activity.getSupportFragmentManager(),
-                "ROOM_FRAGMENT"
-        );
     }
 
     // simple alphanumeric room code
