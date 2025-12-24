@@ -15,6 +15,8 @@ public class Note {
     public Timestamp updatedAt;
     public String type;      // "note" | "pdf"
     public String pdfPath;   // ❗ RẤT QUAN TRỌNG
+    public boolean isShared = false;   // ⭐ note này có thuộc folder chia sẻ không
+    public String roomCode = null;     // ⭐ room chứa note (nếu shared)
 
     public Note() {}
 }

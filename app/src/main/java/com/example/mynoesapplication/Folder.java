@@ -4,23 +4,62 @@ import com.google.firebase.Timestamp;
 
 public class Folder {
 
-    public String id;
-    public String name;
-    public boolean pinned = false;      // ⭐ default
-    public boolean selected = false;
+    // ================= CORE =================
+    public String id;                 // document id
+    public String name;               // folder name
     public Timestamp createdAt;
 
-    // 🔥 THÊM 2 FIELD NÀY
-    public boolean deleted = false;     // ⭐ default
+    // ================= UI STATE =================
+    public boolean pinned = false;    // chỉ áp dụng cho folder của mình
+    public boolean selected = false;  // dùng cho edit mode (local only)
+
+    // ================= TRASH =================
+    public boolean deleted = false;
     public Timestamp deletedAt;
 
-    // ⚠️ BẮT BUỘC constructor rỗng cho Firestore
+    // ================= SHARING =================
+    /**
+     * Folder có phải là folder chia sẻ không
+     * false -> folder cá nhân
+     * true  -> folder thuộc room
+     */
+    public boolean isShared = false;
+
+    /**
+     * roomCode nếu là folder chia sẻ
+     * null nếu là folder cá nhân
+     */
+    public String roomCode;
+
+    /**
+     * UID của người tạo folder (owner)
+     * - folder cá nhân: ownerId == uid hiện tại
+     * - folder chia sẻ: ownerId != uid hiện tại
+     */
+    public String ownerId;
+
+    /**
+     * ID folder gốc của owner
+     * Chỉ dùng khi folder này là bản "joined"
+     */
+    public String originalFolderId;
+
+    // ================= CONSTRUCTOR =================
+    // ⚠️ BẮT BUỘC cho Firestore
     public Folder() {}
 
-    // ✅ Add fields used by FolderSharingAdapter / sharing features
-    public String roomCode; // optional: code for shared room
-    public String ownerId;  // optional: uid of folder owner
+    // ================= HELPER =================
+    /**
+     * Folder này có phải của mình không
+     */
+    public boolean isOwnedBy(String uid) {
+        return ownerId != null && ownerId.equals(uid);
+    }
 
-    // 🔥 NEW: store the original folder id on the owner's side
-    public String originalFolderId;
+    /**
+     * Folder này có phải folder chia sẻ không
+     */
+    public boolean isSharedFolder() {
+        return isShared && roomCode != null && !roomCode.isEmpty();
+    }
 }
