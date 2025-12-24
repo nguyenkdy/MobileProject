@@ -31,6 +31,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import com.example.mynoesapplication.Fragment.ColorPickerFragment;
 
 public class EditNoteActivity extends AppCompatActivity {
 
@@ -476,19 +477,32 @@ public class EditNoteActivity extends AppCompatActivity {
     }
 
     private void showColorPicker() {
-        // only for pen / marker
+        // Only for pen/marker
         if (currentTool != Tool.PEN && currentTool != Tool.MARKER) {
             Toast.makeText(this, "Chỉ áp dụng cho bút & marker", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        com.example.mynoesapplication.Fragment.ColorPickerFragment f = new com.example.mynoesapplication.Fragment.ColorPickerFragment();
-        f.setOnColorSelectedListener(color -> {
+        ColorPickerFragment f = ColorPickerFragment.newInstance(
+                currentTool == Tool.MARKER,
+                currentTool == Tool.MARKER ? 20 : 6 // Default sizes for marker/pen
+        );
+
+        f.setOnColorSizeSelectedListener((color, size) -> {
             selectedColor = color;
-            if (drawingView != null) drawingView.setColor(selectedColor);
+            if (drawingView != null) {
+                drawingView.setColor(selectedColor);
+                if (currentTool == Tool.MARKER) {
+                    drawingView.setMarkerStrokeWidth(size);
+                } else {
+                    drawingView.setPenStrokeWidth(size);
+                }
+            }
         });
+
         f.show(getSupportFragmentManager(), "color_picker");
     }
+
 
 
     private abstract static class SimpleTextWatcher implements android.text.TextWatcher {

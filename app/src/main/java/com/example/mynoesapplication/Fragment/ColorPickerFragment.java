@@ -1,3 +1,4 @@
+// language: java
 package com.example.mynoesapplication.Fragment;
 
 import android.app.Dialog;
@@ -8,34 +9,31 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.mynoesapplication.R;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 public class ColorPickerFragment extends BottomSheetDialogFragment {
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (getDialog() != null && getDialog().getWindow() != null) {
-            // Make dialog window fully transparent
-            getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            getDialog().getWindow().setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-        }
-    }
-    public interface OnColorSelectedListener {
-        void onColorSelected(int color);
+    private static final String ARG_IS_MARKER = "arg_is_marker";
+    private static final String ARG_SIZE = "arg_size";
+
+    public interface OnColorSizeSelectedListener {
+        void onColorSizeSelected(int color, int size);
     }
 
-    private OnColorSelectedListener listener;
+    private OnColorSizeSelectedListener listener;
+    private boolean isMarker = false;
+    private int selectedSize = 6;
+
     private final int[] colors = {
             Color.BLACK, Color.BLUE, Color.RED, Color.GREEN,
             Color.MAGENTA, Color.CYAN, Color.YELLOW, Color.DKGRAY
@@ -45,7 +43,16 @@ public class ColorPickerFragment extends BottomSheetDialogFragment {
             "Tím", "Cyan", "Vàng", "Xám đậm"
     };
 
-    public void setOnColorSelectedListener(OnColorSelectedListener l) {
+    public static ColorPickerFragment newInstance(boolean isMarker, int currentSize) {
+        ColorPickerFragment f = new ColorPickerFragment();
+        Bundle b = new Bundle();
+        b.putBoolean(ARG_IS_MARKER, isMarker);
+        b.putInt(ARG_SIZE, currentSize);
+        f.setArguments(b);
+        return f;
+    }
+
+    public void setOnColorSizeSelectedListener(OnColorSizeSelectedListener l) {
         this.listener = l;
     }
 
@@ -53,6 +60,11 @@ public class ColorPickerFragment extends BottomSheetDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setCancelable(true);
+        Bundle args = getArguments();
+        if (args != null) {
+            isMarker = args.getBoolean(ARG_IS_MARKER, false);
+            selectedSize = args.getInt(ARG_SIZE, isMarker ? 20 : 6);
+        }
     }
 
     @NonNull
@@ -61,18 +73,28 @@ public class ColorPickerFragment extends BottomSheetDialogFragment {
         BottomSheetDialog d = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
         d.setCanceledOnTouchOutside(true);
 
-        // Remove the default bottom-sheet background/shadow when it is shown
         d.setOnShowListener(dialog -> {
             BottomSheetDialog bd = (BottomSheetDialog) dialog;
             FrameLayout bottomSheet = bd.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
-                // remove background and padding so only inner card content remains visible
                 bottomSheet.setBackground(null);
                 bottomSheet.setPadding(0, 0, 0, 0);
             }
         });
 
         return d;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (getDialog() != null && getDialog().getWindow() != null) {
+            getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            getDialog().getWindow().setLayout(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
     }
 
     @Nullable
@@ -82,19 +104,42 @@ public class ColorPickerFragment extends BottomSheetDialogFragment {
                              @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_color_picker, container, false);
 
-        TextView title = v.findViewById(R.id.txtTitle);
+        TextView txtSizeLabel = v.findViewById(R.id.txtSizeLabel);
+        SeekBar seekSize = v.findViewById(R.id.seekSize);
         RecyclerView rv = v.findViewById(R.id.recyclerColors);
 
-        rv.setLayoutManager(new GridLayoutManager(getContext(), 1)); // 1 column list so each item shows full width
+        final int min = isMarker ? 10 : 2;
+        final int max = isMarker ? 40 : 12;
+
+        if (txtSizeLabel != null) {
+            txtSizeLabel.setText((isMarker ? "Độ to Marker: " : "Độ to Pen: ") + selectedSize);
+        }
+
+        if (seekSize != null) {
+            seekSize.setMax(max - min);
+            seekSize.setProgress(Math.max(0, selectedSize - min));
+            seekSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
+                    selectedSize = min + p;
+                    if (txtSizeLabel != null) {
+                        txtSizeLabel.setText((isMarker ? "Độ to Marker: " : "Độ to Pen: ") + selectedSize);
+                    }
+                }
+                @Override public void onStartTrackingTouch(SeekBar sb) {}
+                @Override public void onStopTrackingTouch(SeekBar sb) {}
+            });
+        }
+
+        rv.setLayoutManager(new GridLayoutManager(getContext(), 1));
         rv.setAdapter(new ColorAdapter(colors, names, pos -> {
-            if (listener != null) listener.onColorSelected(colors[pos]);
+            if (listener != null) listener.onColorSizeSelected(colors[pos], selectedSize);
             dismiss();
         }));
 
         return v;
     }
 
-    // Adapter
+    // Adapter classes
     private static class ColorAdapter extends RecyclerView.Adapter<ColorViewHolder> {
         private final int[] colors;
         private final String[] names;

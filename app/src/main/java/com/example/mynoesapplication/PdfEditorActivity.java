@@ -32,6 +32,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 import java.io.File;
 import java.io.IOException;
+import com.example.mynoesapplication.Fragment.ColorPickerFragment;
 
 public class PdfEditorActivity extends AppCompatActivity {
 
@@ -326,7 +327,7 @@ public class PdfEditorActivity extends AppCompatActivity {
             min = 10; max = 40; current = markerSize;
             if (txtSizeLabel != null) txtSizeLabel.setText("Độ to Marker: " + markerSize);
         } else {
-            min = 2; max = 12; current = penSize;
+            min = 2; max = 36; current = penSize;
             if (txtSizeLabel != null) txtSizeLabel.setText("Độ to Pen: " + penSize);
         }
 
@@ -354,14 +355,21 @@ public class PdfEditorActivity extends AppCompatActivity {
             });
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Màu & độ to")
-                .setItems(names, (d, which) -> {
-                    if (adapter != null) adapter.setColor(colors[which]);
-                })
-                .setView(v)
-                .setNegativeButton("Đóng", null)
-                .show();
+        ColorPickerFragment f = ColorPickerFragment.newInstance(
+                currentTool == DrawingView.Tool.MARKER,
+                currentTool == DrawingView.Tool.MARKER ? markerSize : penSize
+        );
+        f.setOnColorSizeSelectedListener((color, size) -> {
+            if (adapter != null) adapter.setColor(color);
+            if (currentTool == DrawingView.Tool.MARKER) {
+                markerSize = size;
+                if (adapter != null) adapter.setMarkerStrokeWidth(markerSize);
+            } else {
+                penSize = size;
+                if (adapter != null) adapter.setPenStrokeWidth(penSize);
+            }
+        });
+        f.show(getSupportFragmentManager(), "color_picker");
     }
 
     // ================== TOOL UI ==================
