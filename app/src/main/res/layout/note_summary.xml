@@ -12,10 +12,10 @@
 
     <FrameLayout
         android:id="@+id/panel"
-        android:layout_width="178dp"
-        android:layout_height="409dp"
+        android:layout_width="236dp"
+        android:layout_height="700dp"
         android:layout_gravity="end"
-        android:layout_marginTop="336dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/bg_popup_note"
         android:padding="16dp">
 
