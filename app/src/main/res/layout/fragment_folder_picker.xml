@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="8dp"
+    android:background="@android:color/transparent">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:cardUseCompatPadding="false"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:strokeColor="@android:color/transparent"
+        app:strokeWidth="0dp">
+
+        <!-- Outer container keeps rounded background and fixed title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@drawable/bg_popup_note"
+            android:clipToPadding="false">
+
+            <TextView
+                android:id="@+id/txtTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Di chuyển vào thư mục"
+                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:paddingBottom="8dp" />
+
+            <!-- Fixed-height content area: RecyclerView scrolls inside this box -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="360dp"
+                android:clipToPadding="false">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerFolders"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:overScrollMode="ifContentScrolls"
+                    android:clipToPadding="false"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:nestedScrollingEnabled="true" />
+
+                <TextView
+                    android:id="@+id/txtEmptyFolders"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone"
+                    android:text="Chưa có thư mục để chọn"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="8dp" />
+
+                <ProgressBar
+                    android:id="@+id/progressFolders"
+                    style="?android:attr/progressBarStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone"
+                    android:indeterminate="true"
+                    android:paddingTop="8dp" />
+
+            </FrameLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

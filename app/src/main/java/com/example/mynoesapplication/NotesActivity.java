@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import com.example.mynoesapplication.Fragment.*;
 
 public class NotesActivity extends AppCompatActivity {
 
@@ -968,66 +969,51 @@ public class NotesActivity extends AppCompatActivity {
     // Load folders ẩn để move (không đổi màn)
     // ==================================================
     private void ensureFolderListThenShowMoveDialog(List<Note> selected) {
-        // nếu đã có -> show luôn
-        if (!folderList.isEmpty()) {
-            showMoveDialog(selected);
-            return;
-        }
+        FolderPickerFragment frag = FolderPickerFragment.newInstance(uid);
+        frag.setOnFolderSelectedListener(folder -> {
+            if (folder == null || folder.id == null) return;
 
-        db.collection("users")
-                .document(uid)
-                .collection("folders")
-                .whereEqualTo("deleted", false)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    folderList.clear();
-                    for (DocumentSnapshot d : snapshot.getDocuments()) {
-                        Folder f = d.toObject(Folder.class);
-                        if (f == null) f = new Folder();
-                        f.id = d.getId();
-                        f.ownerId = null;
-                        folderList.add(f);
-                    }
+            Timestamp now = Timestamp.now();
+
+            for (Note n : selected) {
+                if (n == null || n.id == null) continue;
+
+                if (folder.ownerId != null && !folder.ownerId.equals(uid)) {
+                    Map<String, Object> copy = new HashMap<>();
+                    copy.put("title", n.title == null ? "" : n.title);
+                    copy.put("content", n.content == null ? "" : n.content);
+
+                    String ownerFolderId = (folder.originalFolderId != null && !folder.originalFolderId.isEmpty())
+                            ? folder.originalFolderId
+                            : folder.id;
+
+                    copy.put("folderId", ownerFolderId);
+                    copy.put("createdAt", now);
+                    copy.put("updatedAt", now);
+                    copy.put("deleted", false);
+                    copy.put("deletedAt", null);
 
                     db.collection("users")
+                            .document(folder.ownerId)
+                            .collection("notes")
+                            .add(copy)
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Copy failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
+                } else {
+                    db.collection("users")
                             .document(uid)
-                            .collection("joinedFolders")
-                            .get()
-                            .addOnSuccessListener(joinedSnap -> {
-                                for (DocumentSnapshot jd : joinedSnap.getDocuments()) {
-                                    String roomCode = jd.getId();
-                                    String ownerUid = jd.getString("ownerUid");
-                                    String ownerFolderId = jd.getString("folderId");
-                                    String folderName = jd.getString("folderName");
+                            .collection("notes")
+                            .document(n.id)
+                            .update("folderId", folder.id, "updatedAt", now);
+                }
+            }
 
-                                    if (ownerUid == null || ownerFolderId == null) continue;
+            exitEditMode();
+        });
 
-                                    Folder shared = new Folder();
-                                    shared.id = "shared_" + roomCode;
-
-                                    String baseName = folderName != null ? folderName : "Thư mục chia sẻ";
-                                    String displayName = baseName.endsWith(" (Chia sẻ)")
-                                            ? baseName
-                                            : baseName + " (Chia sẻ)";
-
-                                    shared.name = displayName;
-                                    shared.ownerId = ownerUid;
-                                    shared.roomCode = roomCode;
-                                    shared.originalFolderId = ownerFolderId;
-                                    shared.deleted = false;
-                                    folderList.add(shared);
-                                }
-
-                                // không đổi màn, chỉ load để chọn
-                                showMoveDialog(selected);
-                            })
-                            .addOnFailureListener(e -> showMoveDialog(selected));
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to load folders: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+        frag.show(getSupportFragmentManager(), "folder_picker");
     }
-
     private void showMoveDialog(List<Note> selected) {
         if (folderList.isEmpty()) {
             Toast.makeText(this, "Chưa có thư mục để di chuyển", Toast.LENGTH_SHORT).show();
