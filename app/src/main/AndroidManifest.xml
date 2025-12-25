@@ -26,7 +26,6 @@
         <activity android:name=".SignInActivity" />
         <activity android:name=".SignUpActivity" />
         <activity android:name=".NotesActivity"/>
-        <activity android:name=".FolderSharingActivity"/>
         <activity
             android:name=".ReadOnlyNotesActivity"/>
         <activity
@@ -37,6 +36,9 @@
             android:exported="false" />
         <activity
             android:name=".PdfEditorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReadOnlyOneNoteActivity"
             android:exported="false" />
 
     </application>

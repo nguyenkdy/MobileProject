@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -567,9 +568,34 @@ public class NotesActivity extends AppCompatActivity {
                     : folderList.isEmpty();
         }
 
-        layoutEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-        recyclerNotes.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        if (!isEmpty) {
+            layoutEmpty.setVisibility(View.GONE);
+            recyclerNotes.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        // ===== SHOW EMPTY =====
+        layoutEmpty.setVisibility(View.VISIBLE);
+        recyclerNotes.setVisibility(View.GONE);
+
+        // ===== ĐỔI ICON + TEXT THEO MODE =====
+        ImageView img = layoutEmpty.findViewById(R.id.imgEmptyIcon);
+        TextView title = layoutEmpty.findViewById(R.id.txtEmptyTitle);
+        TextView sub = layoutEmpty.findViewById(R.id.txtEmptySubtitle);
+
+        if (currentMode == ScreenMode.FOLDERS) {
+            // 📁 THƯ MỤC
+            if (img != null) img.setImageResource(R.drawable.ic_folder);
+            if (title != null) title.setText("Chưa có thư mục nào");
+            if (sub != null) sub.setText("Nhấn nút + để tạo thư mục đầu tiên");
+        } else {
+            // 📝 GHI CHÚ
+            if (img != null) img.setImageResource(R.drawable.ic_note_card);
+            if (title != null) title.setText("Chưa có ghi chú nào");
+            if (sub != null) sub.setText("Nhấn nút + để tạo ghi chú đầu tiên");
+        }
     }
+
 
     // ==================================================
     // CREATE MENU

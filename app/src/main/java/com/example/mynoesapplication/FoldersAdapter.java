@@ -95,7 +95,7 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
 
         // ===== EDIT MODE UI =====
         h.chkSelect.setVisibility((isEditMode && !isSharedReadOnly) ? View.VISIBLE : View.GONE);
-        h.btnOption.setVisibility(isEditMode ? View.GONE : (isSharedReadOnly ? View.GONE : View.VISIBLE));
+        h.btnOption.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
 
         // manage checkbox only for owned folders
         h.chkSelect.setOnCheckedChangeListener(null);
@@ -162,14 +162,36 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
     private void showFolderPopup(View anchor, Folder folder) {
         Context ctx = anchor.getContext();
 
-        final boolean owned = (folder.ownerId == null) || (uid != null && folder.ownerId != null && folder.ownerId.equals(uid));
+        boolean owned = (folder.ownerId == null)
+                || (uid != null && uid.equals(folder.ownerId));
+
+        // =======================
+        // FOLDER CHIA SẺ → CHỈ "RỜI THƯ MỤC"
+        // =======================
         if (!owned) {
-            // Use originalFolderId for read-only access
-            String ownerFolderId = (folder.originalFolderId != null && !folder.originalFolderId.isEmpty()) ? folder.originalFolderId : folder.id;
-            openReadOnly(ctx, folder.ownerId, ownerFolderId, folder.name);
+            View popupView = LayoutInflater.from(ctx)
+                    .inflate(R.layout.popup_shared_leave, null);
+
+            PopupWindow popup = new PopupWindow(
+                    popupView,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    true
+            );
+            popup.setElevation(10f);
+            popup.showAsDropDown(anchor, -200, 0);
+
+            popupView.findViewById(R.id.optLeaveFolder).setOnClickListener(v -> {
+                popup.dismiss();
+                confirmLeaveFolder(ctx, folder);
+            });
+
             return;
         }
 
+        // =======================
+        // FOLDER CỦA MÌNH → POPUP CŨ
+        // =======================
         View popupView = LayoutInflater.from(ctx)
                 .inflate(R.layout.popup_folder_option, null);
 
@@ -199,10 +221,10 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
 
         popupView.findViewById(R.id.optShareFolder).setOnClickListener(v -> {
             popup.dismiss();
-            // Owner: create (or reuse) room code and open sharing view showing the room code.
             createRoomForFolder(ctx, folder);
         });
     }
+
 
     // Helper: create room code if missing, save to Firestore, then open FolderSharingActivity with roomCode
     private void createRoomForFolder(Context ctx, Folder folder) {
@@ -588,6 +610,50 @@ public class FoldersAdapter extends RecyclerView.Adapter<FoldersAdapter.FolderVi
                     }
                 })
                 .addOnFailureListener(e -> android.util.Log.w("NotesActivity", "Failed to load joinedFolders: " + e.getMessage()));
+    }
+
+    private void confirmLeaveFolder(Context ctx, Folder folder) {
+        new AlertDialog.Builder(ctx)
+                .setTitle("Rời thư mục")
+                .setMessage("Bạn sẽ không còn truy cập thư mục này nữa.")
+                .setPositiveButton("Rời", (d, w) -> leaveSharedFolder(folder))
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void leaveSharedFolder(Folder folder) {
+        if (uid == null || folder.roomCode == null) return;
+
+        // ✅ UI biến mất NGAY
+        removeFolderImmediately(folder);
+
+        // ================= FIRESTORE =================
+        db.collection("users")
+                .document(uid)
+                .collection("joinedFolders")
+                .document(folder.roomCode)
+                .delete();
+
+        db.collection("users")
+                .document(uid)
+                .collection("folders")
+                .document(folder.id)
+                .delete();
+    }
+
+
+    private void removeFolderImmediately(Folder folder) {
+        int index = -1;
+        for (int i = 0; i < folders.size(); i++) {
+            if (folders.get(i).id.equals(folder.id)) {
+                index = i;
+                break;
+            }
+        }
+        if (index != -1) {
+            folders.remove(index);
+            notifyItemRemoved(index);
+        }
     }
 
 }

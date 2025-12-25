@@ -21,6 +21,7 @@ public class DrawingView extends View {
     private float penStrokeWidth = 6f;
     private float markerStrokeWidth = 20f;
 
+    private boolean readOnly = false;
 
 
     // ================= CALLBACK =================
@@ -161,6 +162,10 @@ public class DrawingView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         // 🔒 READ ONLY → KHÔNG NHẬN TOUCH → CHO SCROLL
+        if (readOnly) {
+            return false;
+        }
+
         if (!isEnabled()) {
             return false;
         }
@@ -230,6 +235,8 @@ public class DrawingView extends View {
 
     // ================= UNDO / REDO =================
     public void undo() {
+        if (readOnly) return;
+
         if (strokes.isEmpty()) return;
 
         Stroke last = strokes.get(strokes.size() - 1);
@@ -242,6 +249,8 @@ public class DrawingView extends View {
     }
 
     public void redo() {
+        if (readOnly) return;
+
         if (redoStrokes.isEmpty()) return;
 
         Stroke s = redoStrokes.remove(redoStrokes.size() - 1);
@@ -328,6 +337,8 @@ public class DrawingView extends View {
     }
 
     public void clear() {
+        if (readOnly) return;
+
         strokes.clear();
         redoStrokes.clear();
         currentPath = null;
@@ -374,5 +385,8 @@ public class DrawingView extends View {
         if (currentTool == Tool.MARKER) setMarker();
     }
 
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
 
 }

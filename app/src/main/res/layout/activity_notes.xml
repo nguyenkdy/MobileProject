@@ -120,13 +120,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="32dp">
 
+        <!-- ICON -->
         <ImageView
+            android:id="@+id/imgEmptyIcon"
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:src="@drawable/ic_note_card"
             android:alpha="0.9"/>
 
+        <!-- TITLE -->
         <TextView
+            android:id="@+id/txtEmptyTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -135,7 +139,9 @@
             android:textSize="16sp"
             android:textColor="#1E1E1E"/>
 
+        <!-- SUB TITLE -->
         <TextView
+            android:id="@+id/txtEmptySubtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
