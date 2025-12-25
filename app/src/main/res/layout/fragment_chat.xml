@@ -109,7 +109,7 @@
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_mic"
+                    android:src="@drawable/ic_ai_information"
                     android:background="@drawable/bg_icon_button"
                     android:scaleType="centerInside" />
             </LinearLayout>
